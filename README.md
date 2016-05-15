@@ -5,13 +5,13 @@ This library supports the full temperature range of the TMP102, from -40C to +12
 
 ## TMP102 Temperature Sensor Key Features
 There are a ton of temperature sensors out there. This one has a great combination of features:
- - $1 in modest quantities 
+ - $1 in modest quantities, $.50 @1000
  - high accuracy (+/- 0.5 deg C)
- - good resolution resolution (0.0625 deg C per bit)
+ - 12-bit resolution (0.0625 deg C per bit)
  - wide temperature range (-40C to +125C)
  - operates 1.4V to 3.6 V supply, only uses 10 uA
  - alarm output
- - [data sheet] (http://www.ti.com/product/TMP102)
+ - TMP102[data sheet] at TI (http://www.ti.com/product/TMP102)
  
 ### Comments
  - This is a work in progress but the current code has been extensively tested and works. 
