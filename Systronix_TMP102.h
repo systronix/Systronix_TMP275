@@ -67,7 +67,11 @@ if ADDR is SCL, address is 0x4B
 
 #include <Arduino.h>
 
-#include <Wire.h>	// for I2C library
+#if defined (__MK20DX256__) || defined (__MK20DX128__) 	// Teensy 3.1 or 3.2 || Teensy 3.0
+#include <i2c_t3.h>		
+#else
+#include <Wire.h>	// for AVR I2C library
+#endif
 
 #ifndef SYSTRONIX_TMP102_h
 #define SYSTRONIX_TMP102_h

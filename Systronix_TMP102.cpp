@@ -7,7 +7,6 @@
 
 #include <Arduino.h>
 #include "Systronix_TMP102.h"	
-//#include <Wire.h>
 
  byte _DEBUG = 1;
 
