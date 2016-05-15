@@ -7,5 +7,5 @@ At the moment output is always in deg C.
 See the source code for plenty of explanatory comments
 
 ###TODO
--add doxygen docs
--Support Alarm output, could be used as a simple thermostat 
+ - add doxygen docs
+ - Support Alarm output, could be used as a simple thermostat 
