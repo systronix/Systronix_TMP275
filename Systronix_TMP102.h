@@ -6,9 +6,11 @@
     @license	BSD (see license.txt)	
     @section	HISTORY
 
-	v1.1	2013Nov30 bboyes Changed pointer register manifest constants
+	v1.00	2016May15 bboyes, added conditional comp for use of 
+			i2C_t3 vs Wire on Teensy 3.x
+	v0.2	2013Nov30 bboyes Changed pointer register manifest constants
 			TMP102_REG_XXXX_REG to TMP102_XXXX_REG_PTR
-    v1.0	2013Nov15 bboyes Start based on working Arduino program
+    v0.1	2013Nov15 bboyes Start based on working Arduino program
 
 */
 /******************************************************************************/

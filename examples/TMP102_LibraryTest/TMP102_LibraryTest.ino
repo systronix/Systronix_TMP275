@@ -14,9 +14,9 @@ Alarm output
 Up to four devices on one bus.
 Reported value agrees to within 0.25 deg C with Fluke 80T-150U
 
-Copyright 2013 Systronix Inc www.systronix.com
+Copyright 2013-2016 Systronix Inc www.systronix.com
 
-NOTES ABOUT WIRE
+NOTES ABOUT I2C library
 
 Wire.endTransmission() seems to be only intended for use with a master write.
 Wire.requestFrom() is used to get bytes from a slave, with read().
@@ -44,8 +44,8 @@ Compiler has major whines if called as shown in the online Wire reference.
 --------------------------------**/
 
 #include <Arduino.h>
-#include <Systronix_TMP102.h>
-#include <Wire.h>
+#include <Systronix_TMP102.h>	// best version of I2C library is #included by the library. Don't include it here!
+
 
 //AKW0	KEYWORD0
 //AKW1	KEYWORD1
