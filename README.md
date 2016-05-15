@@ -11,7 +11,7 @@ There are a ton of temperature sensors out there. This one has a great combinati
  - wide temperature range (-40C to +125C)
  - operates 1.4V to 3.6 V supply, only uses 10 uA
  - alarm output
- - TMP102[data sheet] at TI (http://www.ti.com/product/TMP102)
+ - TMP102 [data sheet](http://www.ti.com/product/TMP102)
  
 ### Comments
  - This is a work in progress but the current code has been extensively tested and works. 
