@@ -195,6 +195,7 @@ class Systronix_TMP102
 		Systronix_TMP102(uint8_t base);		// constructor
 		void begin(void);
 		float raw13ToC(uint16_t raw13);
+		float raw13_to_F (uint16_t raw13);
 		int8_t writePointer (uint8_t pointer);
 		int8_t writeRegister (uint8_t pointer, uint16_t data);
 		int8_t readRegister (uint16_t *data);

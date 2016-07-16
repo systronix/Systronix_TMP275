@@ -21,8 +21,8 @@ Systronix_TMP102::Systronix_TMP102(uint8_t base)
 {
 	_base = base;
 	BaseAddr = base;
-	static data _data;				// instance of the data struct
-	_data.address = _base;	// struct
+//	static data _data;			// instance of the data struct - not used
+//	_data.address = _base;		// struct - not used
 }
 
 /**************************************************************************/
@@ -49,21 +49,33 @@ float Systronix_TMP102::raw13ToC(uint16_t raw13)
 	float degC;
 
 	// 13-bit temp mode
-	if ((raw13 & 0x8000) == 0x8000) // temp is neg, we must take 2's complement
+	if (raw13 & 0x8000)			// temp is neg, we must take 2's complement
 	{
 	//Serial.print (" (neg temp) ");
-	raw13 = ~raw13;    // complement each bit
-	raw13++;             // add one
-	raw13 = raw13>>3;      // we want ms 13 bits
-	degC = -0.0625 * (raw13);  // make result negative
+	raw13 = ~raw13;				// complement each bit
+	raw13++;					// add one
+	raw13 = raw13>>3;			// we want ms 13 bits
+	degC = -0.0625 * (raw13); 	// make result negative
 	}
 	else
 	{
-	raw13 = raw13>>3;      // we want ms 13 bits right-justified
-	degC = 0.0625 * (raw13);  // make result negative
+	raw13 = raw13>>3;			// we want ms 13 bits right-justified
+	degC = 0.0625 * (raw13);	// make result negative
 	}
 	return degC;
 }
+
+
+//---------------------------< R A W 1 3 _ T O _ F >----------------------------------------------------------
+//
+// Convert raw 13-bit TMP102 temperature to degrees Fahrenheit.
+//
+
+float Systronix_TMP102::raw13_to_F (uint16_t raw13)
+	{
+	return (raw13ToC (raw13) * 1.8) + 32.0;
+	}
+
 
 /**
 Write to a TMP102 register
@@ -90,8 +102,8 @@ int8_t Systronix_TMP102::writePointer (uint8_t pointer)
     Serial.print(" ");
   }
 
-  uint8_t b;  // temp variable
-  uint16_t ui;  // temp variable
+//  uint8_t b;  // temp variable - not used
+//  uint16_t ui;  // temp variable - not used
   int8_t flag=-1;  // signed flag, init to error result so we know if it has changed
   byte written;  // number of bytes written
 
@@ -141,7 +153,7 @@ int8_t Systronix_TMP102::writeRegister (uint8_t pointer, uint16_t data)
   }
 
   uint8_t ub;  // temp variable
-  uint16_t ui;  // temp variable
+//  uint16_t ui;  // temp variable - not used
   int8_t flag=-1;  // signed flag, init to error result so we know if it has changed
   byte written;  // number of bytes written
 
