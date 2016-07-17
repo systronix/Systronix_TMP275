@@ -24,3 +24,4 @@ There are a ton of temperature sensors out there. This one has a great combinati
 ### TODO
  - add doxygen docs
  - Support Alarm output, could be used as a simple thermostat 
+ - change function names to noun-verb as recommended in the Netrino Embedded C Coding Standard (https://www.amazon.com/Embedded-Coding-Standard-Michael-Barr/dp/1442164824)
