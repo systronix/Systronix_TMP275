@@ -5,8 +5,7 @@
  *      Author: BAB
  */
 
-#include <Arduino.h>
-#include "Systronix_TMP102.h"	
+#include <Systronix_TMP102.h>	
 
  byte _DEBUG = 1;
 
@@ -21,8 +20,9 @@ Systronix_TMP102::Systronix_TMP102(uint8_t base)
 {
 	_base = base;
 	BaseAddr = base;
-//	static data _data;			// instance of the data struct - not used
-//	_data.address = _base;		// struct - not used
+
+  struct data _data;			// instance of the data struct - not used
+  _data.address = _base;		// struct - not used
 }
 
 /**************************************************************************/
