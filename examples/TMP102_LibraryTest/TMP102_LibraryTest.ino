@@ -30,6 +30,7 @@ Compiler has major whines if called as shown in the online Wire reference.
  
 /** ---------- REVISIONS ----------
 
+2016 Aug 21 wsk		tweaks in support of recent Systronix_TMP102 library rewrite
 2013 Nov 30 bboyes: Working very simple library
 2013 Nov 25 bboyes: First try of code to use TMP102 library
 2013 Nov 11 bboyes: converting to Arduino library per http://arduino.cc/en/Hacking/LibraryTutorial
@@ -54,7 +55,6 @@ Compiler has major whines if called as shown in the online Wire reference.
 //AKW4	KEYWORD4
 //AKW5	KEYWORD5
 //AKW6	KEYWORD6
-
 
  /**
  * debug level
@@ -94,15 +94,16 @@ Errors peg at max value for the data type: they don't roll over.
 
 float temperature = 0.0;
 
-Systronix_TMP102 tmp102_48(0x48);    // We can pass constructor a value
+//Systronix_TMP102 tmp102_48(0x48);    // We can pass constructor a value
+Systronix_TMP102 tmp102_48;    // We can pass constructor a value
 
 /* ========== SETUP ========== */
 void setup(void) 
 {
   uint16_t raw16=0;  // place to put what we just read
-  uint16_t wrt16=0;  // temp write variable
+//  uint16_t wrt16=0;  // temp write variable
   int8_t stat = -1;
-  int16_t temp_int16 = 0;
+//  int16_t temp_int16 = 0;
   
   delay (2000);      // give some time to open monitor window
   Serial.begin(115200);     // use max baud rate
@@ -113,7 +114,7 @@ void setup(void)
   Serial.print("TMP102 Library Test Code at 0x");
   Serial.println(tmp102_48.BaseAddr, HEX);
    
-  int8_t flag = -1;  // I2C returns 0 if no error
+//  int8_t flag = -1;  // I2C returns 0 if no error
   
   // Teensy++2 PE7/INT7/AIN1, pin 32 on module.
   // Teensy3 Digital 3, module pin 4
@@ -121,16 +122,21 @@ void setup(void)
   pinMode(3, INPUT_PULLUP);  
   
   // start TMP102 library
+	tmp102_48.setup(0x48);
   tmp102_48.begin();
+  
 
   // start with default config
   Serial.print ("SetCFG=");
   Serial.print (TMP102_CFG_DEFAULT_WR, HEX);
   Serial.print (" ");
-  stat = tmp102_48.writeRegister(TMP102_CONF_REG_PTR, TMP102_CFG_DEFAULT_WR);
-  if ( 0!= stat) Serial.print (" writeReg error! ");
+//  stat = tmp102_48.writeRegister(TMP102_CONF_REG_PTR, TMP102_CFG_DEFAULT_WR);
+	stat = tmp102_48.init(TMP102_CFG_DEFAULT_WR);
+//  if ( 0!= stat) Serial.print (" writeReg error! ");
+  if (SUCCESS != stat) Serial.print (" writeReg error! ");
   stat = tmp102_48.readRegister (&raw16);
-  if ( 2!= stat) Serial.print (" readReg error! ");
+//  if ( 2!= stat) Serial.print (" readReg error! ");
+  if (SUCCESS != stat) Serial.print (" readReg error! ");
   Serial.print("CFG:");
   Serial.print(raw16, HEX);
   Serial.print(" ");    
@@ -144,9 +150,11 @@ void setup(void)
   Serial.print (configOptions, HEX);
   Serial.print (" ");
   stat = tmp102_48.writeRegister(TMP102_CONF_REG_PTR, configOptions);
-  if ( 0!= stat) Serial.print (" writeReg error! ");
+//  if ( 0!= stat) Serial.print (" writeReg error! ");
+  if (SUCCESS != stat) Serial.print (" writeReg error! ");
   stat = tmp102_48.readRegister (&raw16);
-  if ( 2!= stat) Serial.print (" readReg error! ");
+//  if ( 2!= stat) Serial.print (" readReg error! ");
+  if (SUCCESS != stat) Serial.print (" readReg error! ");
   Serial.print("CFGnow:");
   Serial.print(raw16, HEX);
   Serial.print(" ");  
@@ -202,7 +210,7 @@ uint16_t raw16;
 /* ========== LOOP ========== */
 void loop(void) 
 {
-  int16_t temp0;
+//  int16_t temp0;
   int8_t stat=-1;  // status flag
   float temp;
   
@@ -252,7 +260,8 @@ void loop(void)
     stat = tmp102_48.writePointer(TMP102_TEMP_REG_PTR); 
     // read two bytes of temperature
     stat = tmp102_48.readRegister (&rawtemp);
-    if (2==stat) good++;
+//    if (2==stat) good++;
+    if (SUCCESS==stat) good++;
     else bad++;
   } // if !fake 
   else rawtemp = faketemp;    // fresh simulated value
