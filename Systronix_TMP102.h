@@ -1,3 +1,7 @@
+#ifndef SYSTRONIX_TMP102_h
+#define SYSTRONIX_TMP102_h
+
+
 /******************************************************************************/
 /*!
 	@file		Systronix_TMP102.h
@@ -75,8 +79,9 @@ if ADDR is SCL, address is 0x4B
 #include <Wire.h>	// for AVR I2C library
 #endif
 
-#ifndef SYSTRONIX_TMP102_h
-#define SYSTRONIX_TMP102_h
+#define		SUCCESS	0
+#define		FAIL	0xFF
+#define		ABSENT	0xFD
 
 /** --------  Register Addresses --------
 The two lsb of the pointer register hold the register bits, which
@@ -170,8 +175,12 @@ for example TMP102_CFG_AL = 'AL', the Alert config bit
 class Systronix_TMP102
 {
 	protected:
-	   // Instance-specific properties
-		uint8_t _base; // base address, four possible values
+		uint8_t		_base;								// base address for this instance; four possible values
+		uint8_t		_pointer_reg;						// copy of the pointer register value so we know where it's pointing
+		void		tally_errors (uint8_t);				// maintains the i2c_t3 error counters
+
+	public:
+		// Instance-specific properties
 		/** Data for one instance of a TMP102 temp sensor.
 		Extended 13-bit mode is assumed (12-bit mode is only there for compatibility with older parts)
 		Error counters could be larger but then they waste more data in the typical case where they are zero.
@@ -179,36 +188,52 @@ class Systronix_TMP102
 		
 		Maybe different structs for data values and part control
 		**/
-		struct data {
-		  uint8_t address;    // I2C 7-bit base address, right-justified
-		  uint16_t raw_temp;  // most recent
-		  float deg_c;        
-		  float deg_f;
-		  uint16_t t_high;
-		  uint16_t t_low;  
-		  uint16_t i2c_err_nak;  // total since startup
-		  uint16_t i2c_err_rd;   // total read fails - data not there when expected
-		  bool fresh;	// data is good and fresh
-		};
-   
-	public:
-		Systronix_TMP102(uint8_t base);		// constructor
-		void begin(void);
-		float raw13ToC(uint16_t raw13);
-		float raw13_to_F (uint16_t raw13);
-		int8_t writePointer (uint8_t pointer);
-		int8_t writeRegister (uint8_t pointer, uint16_t data);
-		int8_t readRegister (uint16_t *data);
+		struct
+			{
+			uint16_t	raw_temp;						// most recent
+			uint16_t	t_high = 0xE480;				// preset to minimum temperature value (-55C in raw13 format)
+			uint16_t	t_low = 0x4B00;  				// preset to max temperature value (150C in raw13 format)
+			float		deg_c;        
+			float		deg_f;
+			bool		fresh;							// data is good and fresh TODO: how does one know that the data are not 'fresh'?
+			} data;
+
+		struct
+			{
+			uint8_t		ret_val;						// i2c_t3 library return value from most recent transaction
+			uint32_t	incomplete_write_count;			// Wire.write failed to write all of the data to tx_buffer
+			uint32_t	data_len_error_count;			// data too long
+			uint32_t	rcv_addr_nack_count;			// slave did not ack address
+			uint32_t	rcv_data_nack_count;			// slave did not ack data
+			uint32_t	other_error_count;				// arbitration lost or timeout
+			boolean		exists;							// set false after an unsuccessful i2c transaction
+			} control;
+
 		uint8_t BaseAddr;
-		int8_t readTempDegC (float *tempC);
-		int8_t degCToRaw13 (uint16_t *raw13, float *tempC);
-		int8_t getOneShotDegC (float *tempC);
-		int8_t setModeOneShot (boolean mode);
-		int8_t setModeContinuous (int8_t rate);
+														// i2c_t3 error counters
+
+		void		setup (uint8_t base);				// constructor
+		void		begin (void);
+		uint8_t		init (uint16_t);					// device present and communicating detector
+
+		float		raw13ToC (uint16_t raw13);			// temperature conversion functions
+		float		raw13_to_F (uint16_t raw13);
+		uint8_t		get_temperature_data (void);
+
+		uint8_t		writePointer (uint8_t pointer);		// i2c bus dependent functions
+		uint8_t		writeRegister (uint8_t pointer, uint16_t data);
+		uint8_t		readRegister (uint16_t *data);
+
+		uint8_t		readTempDegC (float *tempC);		// these functions not yet implemented; all return FAIL
+		uint8_t		degCToRaw13 (uint16_t *raw13, float *tempC);
+		uint8_t		getOneShotDegC (float *tempC);
+		uint8_t		setModeOneShot (boolean mode);
+		uint8_t		setModeContinuous (int8_t rate);
 
 	private:
 
 };
 
+extern Systronix_TMP102 tmp102;
 
 #endif /* SYSTRONIX_TMP102_h */
