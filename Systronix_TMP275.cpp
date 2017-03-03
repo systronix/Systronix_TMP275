@@ -1,20 +1,20 @@
 /*
- * Systronix_TMP102.cpp
+ * Systronix_TMP275.cpp
  *
  *  Created on: Nov 15, 2013
  *	  Author: BAB
  */
 
-#include <Systronix_TMP102.h>	
+#include <Systronix_TMP275.h>	
 
 //---------------------------< S E T U P >--------------------------------------------------------------------
 /*!
-	@brief  Instantiates a new TMP102 class to use the given base address
+	@brief  Instantiates a new TMP275 class to use the given base address
 	@todo	Test base address for legal range 0x48-0x4B
 			Add constructor(void) for default address of 0x48
 */
 
-void Systronix_TMP102::setup(uint8_t base)
+void Systronix_TMP275::setup(uint8_t base)
 	{
 	_base = base;
 	BaseAddr = base;
@@ -29,7 +29,7 @@ void Systronix_TMP102::setup(uint8_t base)
 	@brief  Join the I2C bus as a master
 */
 
-void Systronix_TMP102::begin(void)
+void Systronix_TMP275::begin(void)
 	{
 	Wire.begin();	// join I2C as master
 	}
@@ -40,12 +40,12 @@ void Systronix_TMP102::begin(void)
 // Attempts to write the pointer register.  If successful, sets control.exists true, else false.
 //
 
-uint8_t Systronix_TMP102::init (uint16_t config)
+uint8_t Systronix_TMP275::init (uint16_t config)
 	{
 	uint8_t written;
 	
 	Wire.beginTransmission (_base);						// base address
-	written = Wire.write (TMP102_CONF_REG_PTR);			// pointer in 2 lsb
+	written = Wire.write (TMP275_CONF_REG_PTR);			// pointer in 2 lsb
 	written += Wire.write ((uint8_t)(config >> 8));		// write MSB of configuration
 	written += Wire.write ((uint8_t)(config & 0x00FF));	// write LSB of configuration
 
@@ -75,7 +75,7 @@ uint8_t Systronix_TMP102::init (uint16_t config)
 // for whatever reason.
 //
 
-void Systronix_TMP102::tally_errors (uint8_t error)
+void Systronix_TMP275::tally_errors (uint8_t error)
 	{
 	switch (error)
 		{
@@ -106,7 +106,7 @@ void Systronix_TMP102::tally_errors (uint8_t error)
 //---------------------------< R A W 1 3 T O C >--------------------------------------------------------------
 /*!
 	@brief  Convert raw 13-bit temperature to float deg C
-			handles neg and positive values specific to TMP102 extended mode 
+			handles neg and positive values specific to TMP275 extended mode 
 			13-bit temperature data
 
 	@TODO instead pass a pointer to the float variable? and return error if value out of bounds
@@ -121,7 +121,7 @@ void Systronix_TMP102::tally_errors (uint8_t error)
 // to set the pointer register every time the temperature is read.
 //
 
-float Systronix_TMP102::raw13ToC (uint16_t raw13)
+float Systronix_TMP275::raw13ToC (uint16_t raw13)
 	{
 	uint8_t		shift = (raw13 & 1) ? 3 : 4;		// if extended mode shift 3, else shift 4
 	return 0.0625 * ((int16_t)raw13 >> shift);
@@ -130,10 +130,10 @@ float Systronix_TMP102::raw13ToC (uint16_t raw13)
 
 //---------------------------< R A W 1 3 _ T O _ F >----------------------------------------------------------
 //
-// Convert raw 13-bit TMP102 temperature to degrees Fahrenheit.
+// Convert raw 13-bit TMP275 temperature to degrees Fahrenheit.
 //
 
-float Systronix_TMP102::raw13_to_F (uint16_t raw13)
+float Systronix_TMP275::raw13_to_F (uint16_t raw13)
 	{
 	return (raw13ToC (raw13) * 1.8) + 32.0;
 	}
@@ -144,11 +144,11 @@ float Systronix_TMP102::raw13_to_F (uint16_t raw13)
 // Gets current temperature and fills the data struct with the various temperature info
 //
 
-uint8_t Systronix_TMP102::get_temperature_data (void)
+uint8_t Systronix_TMP275::get_temperature_data (void)
 	{
 	
 	if (_pointer_reg)									// if not pointed at temperature register
-		if (writePointer (TMP102_TEMP_REG_PTR))			// attempt to point it
+		if (writePointer (TMP275_TEMP_REG_PTR))			// attempt to point it
 			return FAIL;								// attempt failed; quit
 	
 	if (readRegister (&data.raw_temp))					// attempt to read the temperature
@@ -166,7 +166,7 @@ uint8_t Systronix_TMP102::get_temperature_data (void)
 
 //---------------------------< W R I T E P O I N T E R >------------------------------------------------------
 /**
-Write to a TMP102 register
+Write to a TMP275 register
 Start with slave address, as in any I2C transaction.
 Next byte must be the Pointer Register value, in 2 lsbs
 If all you want to do is set the Pointer Register for subsequent read(s)
@@ -177,7 +177,7 @@ The last value written to the Pointer Register persists until changed.
 
 **/
 
-uint8_t Systronix_TMP102::writePointer (uint8_t pointer)
+uint8_t Systronix_TMP275::writePointer (uint8_t pointer)
 	{
 	if (!control.exists)								// exit immediately if device does not exist
 		return ABSENT;
@@ -202,12 +202,12 @@ uint8_t Systronix_TMP102::writePointer (uint8_t pointer)
 
 //---------------------------< W R I T E R E G I S T E R >----------------------------------------------------
 /**
-Param pointer is the TMP102 register into which to write the data
+Param pointer is the TMP275 register into which to write the data
 data is the 16 bits to write.
 returns 0 if no error, positive values for NAK errors
 **/
 
-uint8_t Systronix_TMP102::writeRegister (uint8_t pointer, uint16_t data)
+uint8_t Systronix_TMP275::writeRegister (uint8_t pointer, uint16_t data)
 	{
 	uint8_t written;									// number of bytes written
 
@@ -240,7 +240,7 @@ uint8_t Systronix_TMP102::writeRegister (uint8_t pointer, uint16_t data)
   return 0 if no error, positive bytes read otherwise.
 */
 
-uint8_t Systronix_TMP102::readRegister (uint16_t *data)
+uint8_t Systronix_TMP275::readRegister (uint16_t *data)
 	{
 	if (!control.exists)								// exit immediately if device does not exist
 		return ABSENT;
@@ -260,12 +260,12 @@ uint8_t Systronix_TMP102::readRegister (uint16_t *data)
 
 //---------------------------< R E A D T E M P D E G C >------------------------------------------------------
 /**
-Read the most current temperature already converted and present in the TMP102 temperature registers
+Read the most current temperature already converted and present in the TMP275 temperature registers
 
 In continuous mode, this could be one sample interval old
 In one shot mode this data is from the last-requested one shot conversion
 **/
-uint8_t Systronix_TMP102::readTempDegC (float *tempC) 
+uint8_t Systronix_TMP275::readTempDegC (float *tempC) 
 	{
 	return FAIL;
 	}
@@ -274,13 +274,13 @@ uint8_t Systronix_TMP102::readTempDegC (float *tempC)
 
 //---------------------------< D E G C T O R A W 1 3 >--------------------------------------------------------
 /**
-Convert deg C float to a raw 13-bit temp value in TMP102 format.
+Convert deg C float to a raw 13-bit temp value in TMP275 format.
 This is needed for Th and Tl registers as thermostat setpoint values
 
-return 0 if OK, error codes if float is outside range of TMP102
+return 0 if OK, error codes if float is outside range of TMP275
 **/
 
-uint8_t Systronix_TMP102::degCToRaw13 (uint16_t *raw13, float *tempC)
+uint8_t Systronix_TMP275::degCToRaw13 (uint16_t *raw13, float *tempC)
 	{
 	return FAIL;
 	}
@@ -291,13 +291,13 @@ uint8_t Systronix_TMP102::degCToRaw13 (uint16_t *raw13, float *tempC)
 Trigger a one-shot temperature conversion, wait for the new value, about 26 msec, and update 
 the variable passed.
 
-If the TMP102 is in continuous conversion mode, this places the part in One Shot mode, 
-triggers the conversion, waits for the result, updates the variable, and leaves the TMP102 in one shot mode.
+If the TMP275 is in continuous conversion mode, this places the part in One Shot mode, 
+triggers the conversion, waits for the result, updates the variable, and leaves the TMP275 in one shot mode.
 
 returns 0 if no error
 **/
 
-uint8_t Systronix_TMP102::getOneShotDegC (float *tempC)
+uint8_t Systronix_TMP275::getOneShotDegC (float *tempC)
 	{
 	return FAIL;
 	}
@@ -305,7 +305,7 @@ uint8_t Systronix_TMP102::getOneShotDegC (float *tempC)
 
 //---------------------------< S E T M O D E O N E S H O T >--------------------------------------------------
 /**
-Set the TMP102 mode to one-shot, with low power sleep in between
+Set the TMP275 mode to one-shot, with low power sleep in between
 
 mode: set to One Shot if true. 
 If false, sets to continuous sampling mode at whatever sample rate was last set.
@@ -313,7 +313,7 @@ If false, sets to continuous sampling mode at whatever sample rate was last set.
 returns: 0 if successful
 **/
 
-uint8_t Systronix_TMP102::setModeOneShot (boolean mode)
+uint8_t Systronix_TMP275::setModeOneShot (boolean mode)
 	{
 	return FAIL;
 	}
@@ -321,15 +321,15 @@ uint8_t Systronix_TMP102::setModeOneShot (boolean mode)
 
 //---------------------------< S E T M O D E C O N T I N U O U S >--------------------------------------------
 /**
-Set TMP102 mode to continuous sampling at the rate given.
+Set TMP275 mode to continuous sampling at the rate given.
 
-rate: must be one of the manifest constants such as TMP102_CFG_RATE_1HZ
+rate: must be one of the manifest constants such as TMP275_CFG_RATE_1HZ
 if rate is not one of the four supported, it is set to the default 4 Hz
 
 returns: 0 if successful
 **/
 
-uint8_t Systronix_TMP102::setModeContinuous (int8_t rate)
+uint8_t Systronix_TMP275::setModeContinuous (int8_t rate)
 	{
 	return FAIL;
 	}
