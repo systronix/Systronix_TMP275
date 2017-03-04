@@ -133,6 +133,7 @@ for example TMP275_CFG_AL = 'AL', the Alert config bit
 // 01 = 10 bits, 0.25 °C
 // 10 = 11 bits, 0.125 °C
 // 11 = 12 bits, 0.0625 °C resolution
+// I don't see a use for anything less than 12 bit mode
 
 #define TMP275_CFG_RES12 0x11 << 5  // if both bits set, 12-bit mode *our default*
 #define TMP275_CFG_RES9 0x00 		// both bits zero, 9-bit mode
@@ -155,9 +156,9 @@ for example TMP275_CFG_AL = 'AL', the Alert config bit
 
 // Shutdown mode Config bit 0
 // Set this bit to be low power (0.1 uA) between single conversions
-// In SD mode you set the OS (one shot) bit to start a single conversion.
+// In SD mode you set the OS (one shot) bit to start a single conversion,
+// it converts once then goes back to sleep.
 #define TMP275_CFG_SD 0x01  // 0 = continuous conversion state *default*
-
 
 class Systronix_TMP275
 {
@@ -203,23 +204,27 @@ class Systronix_TMP275
 		void		begin (void);
 		uint8_t		init (uint16_t);					// device present and communicating detector
 
-		float		raw12ToC (uint16_t raw13);			// temperature conversion functions
+		float		raw12_to_C (uint16_t raw13);			// temperature conversion functions
 		float		raw12_to_F (uint16_t raw13);
 		uint8_t		get_temperature_data (void);
 
-		uint8_t		writePointer (uint8_t pointer);		// i2c bus dependent functions
-		uint8_t		writeRegister (uint8_t pointer, uint16_t data);
-		uint8_t		readRegister (uint16_t *data);
+		uint8_t		pointerWrite (uint8_t pointer);		// i2c bus dependent functions
+		uint8_t		register16Write (uint8_t pointer, uint16_t data);	// write to 16-bit registers
+		uint8_t		register8Write (uint8_t pointer, uint8_t data);		// write to 8-bit registers
+		uint8_t		register16Read (uint16_t *data);
+		uint8_t		register8Read (uint8_t *data);
 
-		uint8_t		readTempDegC (float *tempC);		// these functions not yet implemented; all return FAIL
-		uint8_t		degCToRaw12 (uint16_t *raw13, float *tempC);
-		uint8_t		getOneShotDegC (float *tempC);
-		uint8_t		setModeOneShot (boolean mode);
+		uint8_t		tempReadDegC (float *tempC);		// these functions not yet implemented; all return FAIL
+		uint8_t		tempReadDegF (float *tempF);
+		uint8_t		degCToRaw12 (uint16_t *raw13, float *tempC);	// use to store value in comparison registers
+		uint8_t		degFToRaw12 (uint16_t *raw13, float *tempC);
+		uint8_t		getOneShotDegC (float *tempC);		// TODO may not be best approach for TMP275
+		uint8_t		setModeOneShot (boolean mode);		// ditto
 
 	private:
 
 };
 
-extern Systronix_TMP275 tmp102;
+extern Systronix_TMP275 tmp275;
 
 #endif /* SYSTRONIX_TMP275_h */

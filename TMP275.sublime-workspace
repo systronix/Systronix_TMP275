@@ -4,6 +4,10 @@
 		"selected_items":
 		[
 			[
+				"Systronix",
+				"Systronix_TMP102"
+			],
+			[
 				"time",
 				"timeServer"
 			],
@@ -148,11 +152,22 @@
 	"buffers":
 	[
 		{
-			"file": "/C/Users/BAB/Documents/code/Arduino/libraries/Systronix_TMP102/examples/TMP102_LibraryTest/TMP102_LibraryTest.ino",
+			"file": "Systronix_TMP275.h",
 			"settings":
 			{
-				"buffer_size": 11371,
-				"encoding": "UTF-8",
+				"buffer_size": 8826,
+				"encoding": "Western (Windows 1252)",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"contents": "/*\n * Systronix_TMP275.cpp\n *\n *  Created on: Nov 15, 2013\n *\t  Author: BAB\n */\n\n#include <Systronix_TMP275.h>\t\n\n//---------------------------< S E T U P >--------------------------------------------------------------------\n/*!\n\t@brief  Instantiates a new TMP275 class to use the given base address\n\t@todo\tTest base address for legal range 0x48-0x4B\n\t\t\tAdd constructor(void) for default address of 0x48\n*/\n\nvoid Systronix_TMP275::setup(uint8_t base)\n\t{\n\t_base = base;\n\tBaseAddr = base;\n\n//\tstruct data _data;\t\t\t// instance of the data struct - not used\n//\t_data.address = _base;\t\t// struct - not used\n\t}\n\n\n//---------------------------< B E G I N >--------------------------------------------------------------------\n/*!\n\t@brief  Join the I2C bus as a master\n*/\n\nvoid Systronix_TMP275::begin(void)\n\t{\n\tWire.begin();\t// join I2C as master\n\t}\n\n\n//---------------------------< I N I T >----------------------------------------------------------------------\n//\n// Attempts to write the pointer register.  If successful, sets control.exists true, else false.\n//\n\nuint8_t Systronix_TMP275::init (uint8_t config)\n\t{\n\tuint8_t written;\n\t\n\tWire.beginTransmission (_base);\t\t\t\t\t\t// base address\n\twritten = Wire.write (TMP275_CONF_REG_PTR);\t\t\t// pointer in 2 lsb\n\twritten += Wire.write ((uint8_t)config);\t\t\t// write MSB of configuration\n\n\tif (2 != written)\n\t\t{\n\t\tcontrol.exists = false;\t\t\t\t\t\t\t// unsuccessful i2c_t3 library call\n\t\treturn FAIL;\n\t\t}\n\t\n  \tif (Wire.endTransmission())\n\t\t{\n\t\tcontrol.exists = false;\t\t\t\t\t\t\t// unsuccessful i2c transaction\n\t\treturn FAIL;\n\t\t}\n\t\n\tcontrol.exists = true;\t\t\t\t\t\t\t\t// if here, we appear to have communicated with\n\treturn SUCCESS;\t\t\t\t\t\t\t\t\t\t// the device\n\t}\n\n\n//---------------------------< T A L L Y _ E R R O R S >------------------------------------------------------\n//\n// Here we tally errors.  This does not answer the 'what to do in the event of these errors' question; it just\n// counts them.  If the device does not ack the address portion of a transaction or if we get a timeout error,\n// exists is set to false.  We assume here that the timeout error is really an indication that the automatic\n// reset feature of the i2c_t3 library failed to reset the device in which case, the device no longer 'exists'\n// for whatever reason.\n//\n\nvoid Systronix_TMP275::tally_errors (uint8_t error)\n\t{\n\tswitch (error)\n\t\t{\n\t\tcase 0:\t\t\t\t\t// Wire.write failed to write all of the data to tx_buffer\n\t\t\tcontrol.incomplete_write_count ++;\n\t\t\tbreak;\n\t\tcase 1:\t\t\t\t\t// data too long from endTransmission() (rx/tx buffers are 259 bytes - slave addr + 2 cmd bytes + 256 data)\n\t\tcase 8:\t\t\t\t\t// buffer overflow from call to status() (read - transaction never started)\n\t\t\tcontrol.data_len_error_count ++;\n\t\t\tbreak;\n\t\tcase 2:\t\t\t\t\t// slave did not ack address (write)\n\t\tcase 5:\t\t\t\t\t// from call to status() (read)\n\t\t\tcontrol.rcv_addr_nack_count ++;\n\t\t\tcontrol.exists = false;\n\t\t\tbreak;\n\t\tcase 3:\t\t\t\t\t// slave did not ack data (write)\n\t\tcase 6:\t\t\t\t\t// from call to status() (read)\n\t\t\tcontrol.rcv_data_nack_count ++;\n\t\t\tbreak;\n\t\tcase 4:\t\t\t\t\t// arbitration lost (write) or timeout (read/write) or auto-reset failed\n\t\tcase 7:\t\t\t\t\t// arbitration lost from call to status() (read)\n\t\t\tcontrol.other_error_count ++;\n\t\t\tcontrol.exists=false;\n\t\t}\n\t}\n\n\n//---------------------------< R A W 1 3 T O C >--------------------------------------------------------------\n/*!\n\t@brief  Convert raw 13-bit temperature to float deg C\n\t\t\thandles neg and positive values specific to TMP275 extended mode \n\t\t\t13-bit temperature data\n\n\t@TODO instead pass a pointer to the float variable? and return error if value out of bounds\n*/\n//\n// receives uint16_t raw13 argument that should be an int16_t.  But, because readRegister() is a general\n// purpose function for reading all of the 16 bite registers we get around that by casting the uint16_t to\n// int16_t before we use the value.\n//\n// TODO: take some time to consider if it is worthwhile to have a separate function that just fetches the\n// temperature register.  Obvious downside (if it is a downside) is that such a function would necessarily need\n// to set the pointer register every time the temperature is read.\n//\n\nfloat Systronix_TMP275::raw13ToC (uint16_t raw13)\n\t{\n\tuint8_t\t\tshift = (raw13 & 1) ? 3 : 4;\t\t// if extended mode shift 3, else shift 4\n\treturn 0.0625 * ((int16_t)raw13 >> shift);\n\t}\n\n\n//---------------------------< R A W 1 3 _ T O _ F >----------------------------------------------------------\n//\n// Convert raw 13-bit TMP275 temperature to degrees Fahrenheit.\n//\n\nfloat Systronix_TMP275::raw13_to_F (uint16_t raw13)\n\t{\n\treturn (raw13ToC (raw13) * 1.8) + 32.0;\n\t}\n\n\n//---------------------------< G E T _ T E M P E R A T U R E _ D A T A >--------------------------------------\n//\n// Gets current temperature and fills the data struct with the various temperature info\n//\n\nuint8_t Systronix_TMP275::get_temperature_data (void)\n\t{\n\t\n\tif (_pointer_reg)\t\t\t\t\t\t\t\t\t// if not pointed at temperature register\n\t\tif (writePointer (TMP275_TEMP_REG_PTR))\t\t\t// attempt to point it\n\t\t\treturn FAIL;\t\t\t\t\t\t\t\t// attempt failed; quit\n\t\n\tif (readRegister (&data.raw_temp))\t\t\t\t\t// attempt to read the temperature\n\t\treturn FAIL;\t\t\t\t\t\t\t\t\t// attempt failed; quit\n\t\n\tdata.t_high = max((int16_t)data.raw_temp, (int16_t)data.t_high);\t// keep track of min/max temperatures\n\tdata.t_low = min((int16_t)data.t_low, (int16_t)data.raw_temp);\n\n\tdata.deg_c = raw13ToC (data.raw_temp);\t\t\t\t\t// convert to human-readable forms\n\tdata.deg_f = raw13_to_F (data.raw_temp);\n\t\n\treturn SUCCESS;\n\t}\n\n\n//---------------------------< W R I T E P O I N T E R >------------------------------------------------------\n/**\nWrite to a TMP275 register\nStart with slave address, as in any I2C transaction.\nNext byte must be the Pointer Register value, in 2 lsbs\nIf all you want to do is set the Pointer Register for subsequent read(s)\nthen this 2-byte write cycle is complete.\n\nData bytes in the write are optional but must always follow the Pointer Register write byte.\nThe last value written to the Pointer Register persists until changed.\n\n**/\n\nuint8_t Systronix_TMP275::writePointer (uint8_t pointer)\n\t{\n\tif (!control.exists)\t\t\t\t\t\t\t\t// exit immediately if device does not exist\n\t\treturn ABSENT;\n\n\t_pointer_reg = pointer;\t\t\t\t\t\t\t\t// keep a copy for use by other functions\n\tWire.beginTransmission (_base);\t\t\t\t\t\t// base address\n\tcontrol.ret_val = Wire.write (_pointer_reg);\t\t// pointer in 2 lsb\n\tif (1 != control.ret_val)\n\t\t{\n\t\tcontrol.ret_val = 0;\n\t\ttally_errors (control.ret_val);\t\t\t\t\t// increment the appropriate counter\n\t\treturn FAIL;\n\t\t}\n\n\tcontrol.ret_val = Wire.endTransmission();\n  \tif (SUCCESS == control.ret_val)\n\t\treturn SUCCESS;\n\ttally_errors (control.ret_val);\t\t\t\t\t\t// increment the appropriate counter\n\treturn FAIL;\t\t\t\t\t\t\t\t\t\t// calling function decides what to do with the error\n\t}\n\n\n//---------------------------< W R I T E R E G I S T E R >----------------------------------------------------\n/**\nParam pointer is the TMP275 register into which to write the data\ndata is the 16 bits to write.\nreturns 0 if no error, positive values for NAK errors\n**/\n\nuint8_t Systronix_TMP275::writeRegister (uint8_t pointer, uint16_t data)\n\t{\n\tuint8_t written;\t\t\t\t\t\t\t\t\t// number of bytes written\n\n\tif (!control.exists)\t\t\t\t\t\t\t\t// exit immediately if device does not exist\n\t\treturn ABSENT;\n\n\tWire.beginTransmission (_base);\t\t\t\t\t\t// base address\n\twritten = Wire.write (pointer);\t\t\t\t\t\t// pointer in 2 lsb\n\twritten += Wire.write ((uint8_t)(data >> 8));\t\t// write MSB of data\n\twritten += Wire.write ((uint8_t)(data & 0x00FF));\t// write LSB of data\n\n\tif (3 != written)\n\t\t{\n\t\tcontrol.ret_val = 0;\n\t\ttally_errors (control.ret_val);\t\t\t\t\t// increment the appropriate counter\n\t\treturn FAIL;\n\t\t}\n\t\n  \tif (SUCCESS == Wire.endTransmission())\n\t\treturn SUCCESS;\n\ttally_errors (control.ret_val);\t\t\t\t\t\t// increment the appropriate counter\n\treturn FAIL;\t\t\t\t\t\t\t\t\t\t// calling function decides what to do with the error\n\t}\n\n\n//---------------------------< R E A D R E G I S T E R >------------------------------------------------------\n/**\n  Read the 16-bit register addressed by the current pointer value, store the data at the location passed\n  \n  return 0 if no error, positive bytes read otherwise.\n*/\n\nuint8_t Systronix_TMP275::readRegister (uint16_t *data)\n\t{\n\tif (!control.exists)\t\t\t\t\t\t\t\t// exit immediately if device does not exist\n\t\treturn ABSENT;\n\n\tif (2 != Wire.requestFrom(_base, 2, I2C_STOP))\n\t\t{\n\t\tcontrol.ret_val = Wire.status();\t\t\t\t// to get error value\n\t\ttally_errors (control.ret_val);\t\t\t\t\t// increment the appropriate counter\n\t\treturn FAIL;\n\t\t}\n\n\t*data = (uint16_t)Wire.read() << 8;\n\t*data |= (uint16_t)Wire.read();\n\treturn SUCCESS;\n\t}\n\n\n//---------------------------< R E A D T E M P D E G C >------------------------------------------------------\n/**\nRead the most current temperature already converted and present in the TMP275 temperature registers\n\nIn continuous mode, this could be one sample interval old\nIn one shot mode this data is from the last-requested one shot conversion\n**/\nuint8_t Systronix_TMP275::readTempDegC (float *tempC) \n\t{\n\treturn FAIL;\n\t}\n\n\n\n//---------------------------< D E G C T O R A W 1 3 >--------------------------------------------------------\n/**\nConvert deg C float to a raw 13-bit temp value in TMP275 format.\nThis is needed for Th and Tl registers as thermostat setpoint values\n\nreturn 0 if OK, error codes if float is outside range of TMP275\n**/\n\nuint8_t Systronix_TMP275::degCToRaw13 (uint16_t *raw13, float *tempC)\n\t{\n\treturn FAIL;\n\t}\n\n\n//---------------------------< G E T O N E S H O T D E G C>---------------------------------------------------\n/**\nTrigger a one-shot temperature conversion, wait for the new value, about 26 msec, and update \nthe variable passed.\n\nIf the TMP275 is in continuous conversion mode, this places the part in One Shot mode, \ntriggers the conversion, waits for the result, updates the variable, and leaves the TMP275 in one shot mode.\n\nreturns 0 if no error\n**/\n\nuint8_t Systronix_TMP275::getOneShotDegC (float *tempC)\n\t{\n\treturn FAIL;\n\t}\n\n\n//---------------------------< S E T M O D E O N E S H O T >--------------------------------------------------\n/**\nSet the TMP275 mode to one-shot, with low power sleep in between\n\nmode: set to One Shot if true. \nIf false, sets to continuous sampling mode at whatever sample rate was last set.\n\nreturns: 0 if successful\n**/\n\nuint8_t Systronix_TMP275::setModeOneShot (boolean mode)\n\t{\n\treturn FAIL;\n\t}\n\n\n//---------------------------< S E T M O D E C O N T I N U O U S >--------------------------------------------\n/**\nSet TMP275 mode to continuous sampling at the rate given.\n\nrate: must be one of the manifest constants such as TMP275_CFG_RATE_1HZ\nif rate is not one of the four supported, it is set to the default 4 Hz\n\nreturns: 0 if successful\n**/\n\nuint8_t Systronix_TMP275::setModeContinuous (int8_t rate)\n\t{\n\treturn FAIL;\n\t}\n",
+			"file": "Systronix_TMP275.cpp",
+			"file_size": 11258,
+			"file_write_time": 131330392274000775,
+			"settings":
+			{
+				"buffer_size": 10833,
 				"line_ending": "Windows"
 			}
 		}
@@ -164,10 +179,14 @@
 	"build_varint": "",
 	"command_palette":
 	{
-		"height": 127.0,
-		"last_filter": "upp",
+		"height": 392.0,
+		"last_filter": "Package Control: ",
 		"selected_items":
 		[
+			[
+				"Package Control: ",
+				"Package Control: Add Repository"
+			],
 			[
 				"upp",
 				"Convert Case: Upper Case"
@@ -202,11 +221,16 @@
 	},
 	"expanded_folders":
 	[
-		"/C/Users/BAB/Documents/code/Arduino/libraries/Systronix_TMP102/examples",
-		"/C/Users/BAB/Documents/code/Arduino/libraries/Systronix_TMP102/examples/TMP102_LibraryTest"
+		"/C/Users/BAB/Documents/code/Arduino/libraries/Systronix_TMP275",
+		"/C/Users/BAB/Documents/code/Arduino/libraries/Systronix_TMP275/examples"
 	],
 	"file_history":
 	[
+		"/C/Users/BAB/Documents/code/Arduino/libraries/Systronix_TMP102/examples/TMP102_LibraryTest/TMP102_LibraryTest.ino",
+		"/C/Users/BAB/Documents/code/bash_scripts/pull.sh",
+		"/C/Users/BAB/Documents/code/Arduino/SALT_CodeUpdates/b2bwec.ini",
+		"/C/Users/BAB/Documents/code/Arduino/libraries/EmonLib/library.properties",
+		"/C/Users/BAB/Documents/code/Arduino/libraries/Systronix_TMP275/CelciusToFahrenheit.ods",
 		"/C/Users/BAB/Documents/code/Arduino/libraries/TeensyID/examples/ReadAll/ReadAll.ino",
 		"/C/Users/BAB/Documents/code/Arduino/libraries/TeensyID/TeensyID.cpp",
 		"/C/Users/BAB/Documents/code/Arduino/libraries/TeensyID/TeensyID.h",
@@ -219,7 +243,6 @@
 		"/C/Users/BAB/Documents/code/Arduino/libraries/T3Mac/T3Mac.h",
 		"/C/Users/BAB/Documents/code/Arduino/libraries/T3Mac/T3Mac.cpp",
 		"/C/Users/BAB/Documents/code/Arduino/libraries/TeensyID/README.md",
-		"/C/Users/BAB/Documents/code/bash_scripts/pull.sh",
 		"/C/Users/BAB/Documents/code/Arduino/libraries/TeensyMAC/TeensyMAC.cpp",
 		"/C/Users/BAB/AppData/Local/Temp/wzf9c9/T3Mac/T3Mac.cpp",
 		"/C/Users/BAB/AppData/Local/Temp/wz5aad/T3Mac/T3Mac.h",
@@ -247,7 +270,6 @@
 		"/C/Users/BAB/Documents/code/Arduino/libraries/Systronix_LCM300Q/Systronix_LCM300Q.h",
 		"/C/Users/BAB/Documents/code/Arduino/libraries/SALT_menu/SALT_menu_act.cpp",
 		"/C/Users/BAB/Documents/code/Arduino/libraries/SALT_UI/NAP_UI_key_defs.h",
-		"/C/Users/BAB/Documents/code/Arduino/SALT_CodeUpdates/b2bwec.ini",
 		"/C/napserver/start.bat",
 		"/C/napserver/apache24/logs/error.log",
 		"/E/NAP/cpld_2016/cpld/CPLD.jed",
@@ -316,7 +338,6 @@
 		"/C/Users/BAB/AppData/Roaming/Sublime Text 3/Packages/User/C++.sublime-settings",
 		"/C/Users/BAB/Documents/code/Arduino/libraries/SALT_settings/SALT_settings.cpp",
 		"/C/Users/BAB/Documents/code/Arduino/libraries/Systronix_MB85RC256V/examples/fram_test/fram_test.ino",
-		"/C/Users/BAB/Documents/code/Arduino/libraries/Systronix_TMP102/examples/TMP102_LibraryTest/TMP102_LibraryTest.ino",
 		"/C/Users/BAB/Documents/code/Arduino/libraries/Systronix_MB85RC256V/examples/rcv_ini_file/'SALT_INI_File_Issues'",
 		"/C/Users/BAB/Documents/code/Arduino/SALT_CodeUpdates/sswec.ini",
 		"/C/Users/BAB/Documents/code/Arduino/SALT_CodeUpdates/b2bwec_NoComments_20160805.ini",
@@ -332,9 +353,7 @@
 		"/C/Users/BAB/AppData/Roaming/Sublime Text 3/Local/Session.sublime_session",
 		"/C/Users/BAB/AppData/Roaming/Sublime Text 3/Packages/User/Preferences.sublime-settings",
 		"/C/Users/BAB/AppData/Roaming/Sublime Text 3/Packages/User/Default (Windows).sublime-keymap",
-		"/C/Users/BAB/AppData/Roaming/Sublime Text 3/Packages/Default/Default (Windows).sublime-keymap",
-		"/C/Users/BAB/Documents/code/Sublime_projects/Temp1.sublime-project",
-		"/C/Users/BAB/Documents/code/Sublime_projects/Sublime_SALT-menu.sublime-workspace"
+		"/C/Users/BAB/AppData/Roaming/Sublime Text 3/Packages/Default/Default (Windows).sublime-keymap"
 	],
 	"find":
 	{
@@ -352,6 +371,9 @@
 		"case_sensitive": true,
 		"find_history":
 		[
+			"heater",
+			"102",
+			");\n",
 			"mac",
 			"teensy_mac",
 			"getTeensySerial",
@@ -476,10 +498,7 @@
 			"act_ptr",
 			"printf",
 			"key_data",
-			"(menu_obj* menu_ptr)",
-			"(menu_obj*)",
-			"(menu_obj*",
-			"ON"
+			"(menu_obj* menu_ptr)"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -614,35 +633,64 @@
 	"groups":
 	[
 		{
-			"selected": 0,
+			"selected": 1,
 			"sheets":
 			[
 				{
 					"buffer": 0,
-					"file": "/C/Users/BAB/Documents/code/Arduino/libraries/Systronix_TMP102/examples/TMP102_LibraryTest/TMP102_LibraryTest.ino",
+					"file": "Systronix_TMP275.h",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 11371,
+						"buffer_size": 8826,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								9075,
-								9075
+								8791,
+								8791
+							]
+						],
+						"settings":
+						{
+							"function_name_status_row": 227,
+							"syntax": "Packages/C++/C++.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 2384.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "Systronix_TMP275.cpp",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 10833,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1057,
+								1057
 							]
 						],
 						"settings":
 						{
 							"function_name_status_row": -1,
 							"syntax": "Packages/C++/C++.sublime-syntax",
-							"tab_size": 2,
-							"translate_tabs_to_spaces": true
+							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 3654.0,
+						"translation.y": 546.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 0,
