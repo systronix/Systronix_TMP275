@@ -1,51 +1,23 @@
 
-/** ---------- TMP102 Library Test Code ------------------------
+/** ---------- TMP275 Library Test Code ------------------------
 
-Controller is Teensy++ 2.0 but will also work with Arduino
-We are running at 3.3V and therefore 8 MHz
+Copyright 2017 Systronix Inc www.systronix.com
 
-Why the TMP102? The TMP102 is two-wire- and SMBus 
-interface-compatible, and is specified over a 
-temperature range of –40°C to +125°C.
-TINY SOT563 PACKAGE
-ACCURACY: 0.5°C (–25°C to +85°C) (a bit worse up to 125C)
-12-bit direct to digital conversion
-Alarm output
-Up to four devices on one bus.
-Reported value agrees to within 0.25 deg C with Fluke 80T-150U
+I2C notes
+See notes in Systronix_TMP102 example
 
-Copyright 2013-2016 Systronix Inc www.systronix.com
-
-NOTES ABOUT I2C library
-
-Wire.endTransmission() seems to be only intended for use with a master write.
-Wire.requestFrom() is used to get bytes from a slave, with read().
-beginTransmission() followed by read() does not work. Slave address gets sent, then nothing else. As if the read commands get ignored.
-I guess reads are not a "Transmission".
-
-So to read three bytes, do a requestFrom(address, 2, true). << insists the first param is int.  
+To read three bytes, do a requestFrom(address, 2, true). << insists the first param is int.  
 Compiler has major whines if called as shown in the online Wire reference.
 
 **/
  
 /** ---------- REVISIONS ----------
 
-2016 Aug 21 wsk		tweaks in support of recent Systronix_TMP102 library rewrite
-2013 Nov 30 bboyes: Working very simple library
-2013 Nov 25 bboyes: First try of code to use TMP102 library
-2013 Nov 11 bboyes: converting to Arduino library per http://arduino.cc/en/Hacking/LibraryTutorial
-2013 Jul 20 bboyes: adding Ethernet support on Teensy++2 and Wiznet 812 on adapter. Simple web server works!
-2013 Feb 13 bboyes: adding more methods to set mode and sample temperature
-2013 Feb 11 bboyes: reducing output and changing format to allow for easy import into spreadsheet
-2013 Feb 08 bboyes: 13-bit extended mode is working. Simulated data used to test entire range from +150C to -55C
-            SD (shutdown) and OS (one-shot conversion) bits work in low power shutdown mode
-2013 Feb 04 bboyes: Arduino 1.0.3 and Teensy 1v12 (not beta). got readRegister to work and discovered some surprising things 
-            about the Arduino Wire library.
-2013 Jan 16 bboyes: start
+2017Mar04 bboyes  Start, based on TMP102 example
 --------------------------------**/
 
 #include <Arduino.h>
-#include <Systronix_TMP102.h>	// best version of I2C library is #included by the library. Don't include it here!
+#include <Systronix_TMP275.h>	// best version of I2C library is #included by the library. Don't include it here!
 
 
 //AKW0	KEYWORD0
@@ -73,29 +45,10 @@ uint16_t configOptions;
 
 boolean fake;    // if true use simulated temperature data
 
-/**
-Data for one instance of a TMP102 temp sensor.
-Extended 13-bit mode is assumed (12-bit mode is only there for compatibility with older parts)
-Error counters could be larger but then they waste more data in the typical case where they are zero.
-Errors peg at max value for the data type: they don't roll over.
-**/
-//struct data {
-//  uint8_t address;    // I2C address, only the low 7 bits matter
-//  uint16_t raw_temp;  // most recent
-//  float deg_c;        
-//  float deg_f;
-//  uint16_t t_high;
-//  uint16_t t_low;  
-//  uint16_t i2c_err_nak;  // total since startup
-//  uint16_t i2c_err_rd;   // total read fails - data not there when expected
-//};
-
-//static data tmp48;      // TMP102 at base address 0x48
-
 float temperature = 0.0;
 
 //Systronix_TMP102 tmp102_48(0x48);    // We can pass constructor a value
-Systronix_TMP102 tmp102_48;    // We can pass constructor a value
+Systronix_TMP275 tmp102_48;    // We can pass constructor a value
 
 /* ========== SETUP ========== */
 void setup(void) 
