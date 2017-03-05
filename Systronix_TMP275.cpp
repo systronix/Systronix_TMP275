@@ -7,14 +7,14 @@
 
 #include <Systronix_TMP275.h>	
 
-//---------------------------< S E T U P >--------------------------------------------------------------------
+//---------------------------< CONSTRUCTOR >--------------------------------------------------------------------
 /*!
 	@brief  Instantiates a new TMP275 class to use the given base address
 	@todo	Test base address for legal range 0x48-0x4B
 			Add constructor(void) for default address of 0x48
 */
 
-void Systronix_TMP275::setup(uint8_t base)
+Systronix_TMP275(uint8_t base)
 	{
 	_base = base;
 	BaseAddr = base;
@@ -25,6 +25,7 @@ void Systronix_TMP275::setup(uint8_t base)
 
 
 //---------------------------< B E G I N >--------------------------------------------------------------------
+// One-time startup things here. Call this only at program start.
 /*!
 	@brief  Join the I2C bus as a master
 */
@@ -46,10 +47,9 @@ uint8_t Systronix_TMP275::init (uint16_t config)
 	
 	Wire.beginTransmission (_base);						// base address
 	written = Wire.write (TMP275_CONF_REG_PTR);			// pointer in 2 lsb
-	written += Wire.write ((uint8_t)(config >> 8));		// write MSB of configuration
-	written += Wire.write ((uint8_t)(config & 0x00FF));	// write LSB of configuration
+	written += Wire.write (config);						// write configuration
 
-	if (3 != written)
+	if (2 != written)
 		{
 		control.exists = false;							// unsuccessful i2c_t3 library call
 		return FAIL;
@@ -62,7 +62,7 @@ uint8_t Systronix_TMP275::init (uint16_t config)
 		}
 	
 	control.exists = true;								// if here, we appear to have communicated with
-	return SUCCESS;										// the tmp102
+	return SUCCESS;										// the sensor
 	}
 
 

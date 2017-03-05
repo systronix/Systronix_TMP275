@@ -4,7 +4,7 @@
 Copyright 2017 Systronix Inc www.systronix.com
 
 I2C notes
-See notes in Systronix_TMP102 example
+See notes in Systronix_TMP275 example
 
 To read three bytes, do a requestFrom(address, 2, true). << insists the first param is int.  
 Compiler has major whines if called as shown in the online Wire reference.
@@ -13,7 +13,7 @@ Compiler has major whines if called as shown in the online Wire reference.
  
 /** ---------- REVISIONS ----------
 
-2017Mar04 bboyes  Start, based on TMP102 example
+2017Mar04 bboyes  Start, based on TMP275 example
 --------------------------------**/
 
 #include <Arduino.h>
@@ -47,13 +47,14 @@ boolean fake;    // if true use simulated temperature data
 
 float temperature = 0.0;
 
-//Systronix_TMP102 tmp102_48(0x48);    // We can pass constructor a value
-Systronix_TMP275 tmp102_48;    // We can pass constructor a value
+Systronix_TMP275 tmp275_48(0x48);    // We can pass constructor a value
 
 /* ========== SETUP ========== */
 void setup(void) 
 {
-  uint16_t raw16=0;  // place to put what we just read
+  uint16_t raw16 = 0;  // place to put what we just read 16 bits
+  uint8_t raw8 = 0;
+
 //  uint16_t wrt16=0;  // temp write variable
   int8_t stat = -1;
 //  int16_t temp_int16 = 0;
@@ -63,9 +64,9 @@ void setup(void)
   // Teensy3 doesn't reset with Serial Monitor as do Teensy2/++2, or wait for Serial Monitor window
   // Wait here for 10 seconds to see if we will use Serial Monitor, so output is not lost
   while((!Serial) && (millis()<10000));    // wait until serial monitor is open or timeout, which seems to fall through
-  
-  Serial.print("TMP102 Library Test Code at 0x");
-  Serial.println(tmp102_48.BaseAddr, HEX);
+ 
+  Serial.print("TMP275 Library Test Code at 0x");
+  Serial.println(tmp275_48.BaseAddr, HEX); 
    
 //  int8_t flag = -1;  // I2C returns 0 if no error
   
@@ -74,38 +75,36 @@ void setup(void)
   // make it input so we can use it for ALERT
   pinMode(3, INPUT_PULLUP);  
   
-  // start TMP102 library
-	tmp102_48.setup(0x48);
-  tmp102_48.begin();
-  
+  // start TMP275 library
+  tmp275_48.begin();
 
   // start with default config
   Serial.print ("SetCFG=");
-  Serial.print (TMP102_CFG_DEFAULT_WR, HEX);
+  Serial.print (TMP275_CFG_RES12, HEX);
   Serial.print (" ");
-//  stat = tmp102_48.writeRegister(TMP102_CONF_REG_PTR, TMP102_CFG_DEFAULT_WR);
-	stat = tmp102_48.init(TMP102_CFG_DEFAULT_WR);
+//  stat = tmp275_48.writeRegister(TMP275_CONF_REG_PTR, TMP275_CFG_DEFAULT_WR);
+	stat = tmp275_48.init(TMP275_CFG_DEFAULT_WR);
 //  if ( 0!= stat) Serial.print (" writeReg error! ");
   if (SUCCESS != stat) Serial.print (" writeReg error! ");
-  stat = tmp102_48.readRegister (&raw16);
+  stat = tmp275_48.register8Read (&raw8);
 //  if ( 2!= stat) Serial.print (" readReg error! ");
   if (SUCCESS != stat) Serial.print (" readReg error! ");
   Serial.print("CFG:");
-  Serial.print(raw16, HEX);
+  Serial.print(raw8, HEX);
   Serial.print(" ");    
   
   configOptions = 0x0;  // 
-  configOptions |= TMP102_CFG_EM;  // set Extended Mode
-  configOptions |= TMP102_CFG_RATE_1HZ;  // 1Hz conversion
-  configOptions |= TMP102_CFG_SD;        // sleep between conversions
+  configOptions |= TMP275_CFG_EM;  // set Extended Mode
+  configOptions |= TMP275_CFG_RATE_1HZ;  // 1Hz conversion
+  configOptions |= TMP275_CFG_SD;        // sleep between conversions
   
   Serial.print ("SetCFG=");
   Serial.print (configOptions, HEX);
   Serial.print (" ");
-  stat = tmp102_48.writeRegister(TMP102_CONF_REG_PTR, configOptions);
+  stat = tmp275_48.writeRegister(TMP275_CONF_REG_PTR, configOptions);
 //  if ( 0!= stat) Serial.print (" writeReg error! ");
   if (SUCCESS != stat) Serial.print (" writeReg error! ");
-  stat = tmp102_48.readRegister (&raw16);
+  stat = tmp275_48.readRegister (&raw16);
 //  if ( 2!= stat) Serial.print (" readReg error! ");
   if (SUCCESS != stat) Serial.print (" readReg error! ");
   Serial.print("CFGnow:");
@@ -113,26 +112,26 @@ void setup(void)
   Serial.print(" ");  
   
   delay(30);    // 26 msec for conversion
-  stat = tmp102_48.writePointer(TMP102_CONF_REG_PTR);
-  stat = tmp102_48.readRegister (&raw16);
+  stat = tmp275_48.writePointer(TMP275_CONF_REG_PTR);
+  stat = tmp275_48.readRegister (&raw16);
   Serial.print("CFG:");
   Serial.print(raw16, HEX);
   Serial.print(" ");
   
-  stat = tmp102_48.writePointer(TMP102_TLOW_REG_PTR);
-  stat = tmp102_48.readRegister (&raw16);
+  stat = tmp275_48.writePointer(TMP275_TLOW_REG_PTR);
+  stat = tmp275_48.readRegister (&raw16);
   Serial.print("Tlo:");
   Serial.print(raw16, HEX);
   Serial.print(" ");
   
-  stat = tmp102_48.writePointer(TMP102_THIGH_REG_PTR);
-  stat = tmp102_48.readRegister (&raw16);
+  stat = tmp275_48.writePointer(TMP275_THIGH_REG_PTR);
+  stat = tmp275_48.readRegister (&raw16);
   Serial.print("Thi:");
   Serial.print(raw16, HEX);
   Serial.print(" ");
   
   // leave the pointer set to read temperature
-  stat = tmp102_48.writePointer(TMP102_TEMP_REG_PTR);
+  stat = tmp275_48.writePointer(TMP275_TEMP_REG_PTR);
   
 //  // fake temp  
 //  fake = true;
@@ -190,29 +189,29 @@ void loop(void)
       Serial.print(" ");
     }
   
-    stat = tmp102_48.writePointer(TMP102_CONF_REG_PTR);
+    stat = tmp275_48.writePointer(TMP275_CONF_REG_PTR);
     if (DEBUG >=3)
     {
-      stat = tmp102_48.readRegister (&raw16);
+      stat = tmp275_48.readRegister (&raw16);
       Serial.print("CFG:");
       Serial.print(raw16, HEX);
       Serial.print(" ");
     }
   
-    configOptions |= TMP102_CFG_OS;        // start One Shot conversion
-    stat = tmp102_48.writeRegister (TMP102_CONF_REG_PTR, configOptions);
+    configOptions |= TMP275_CFG_OS;        // start One Shot conversion
+    stat = tmp275_48.writeRegister (TMP275_CONF_REG_PTR, configOptions);
   
     if (DEBUG >=2)
     {  
-      stat = tmp102_48.readRegister (&raw16);
+      stat = tmp275_48.readRegister (&raw16);
       Serial.print("CFG:");
       Serial.print(raw16, HEX);
       Serial.print(" ");
     }
     // pointer set to read temperature
-    stat = tmp102_48.writePointer(TMP102_TEMP_REG_PTR); 
+    stat = tmp275_48.writePointer(TMP275_TEMP_REG_PTR); 
     // read two bytes of temperature
-    stat = tmp102_48.readRegister (&rawtemp);
+    stat = tmp275_48.readRegister (&rawtemp);
 //    if (2==stat) good++;
     if (SUCCESS==stat) good++;
     else bad++;
@@ -227,7 +226,7 @@ void loop(void)
     Serial.print (" ");
   }
 
-  temp = tmp102_48.raw13ToC(rawtemp);
+  temp = tmp275_48.raw13ToC(rawtemp);
   
   temperature = temp;  // for Ethernet client
   
@@ -275,7 +274,7 @@ void loop(void)
 
 
 /**
-Read the most current temperature already converted and present in the TMP102 temperature registers
+Read the most current temperature already converted and present in the TMP275 temperature registers
 
 In continuous mode, this could be one sample interval old
 In one shot mode this data is from the last-requested one shot conversion
@@ -288,10 +287,10 @@ uint8_t readTempDegC (float *tempC)
 
 
 /**
-Convert deg C float to a raw 13-bit temp value in TMP102 format.
+Convert deg C float to a raw 13-bit temp value in TMP275 format.
 This is needed for Th and Tl registers as thermostat setpoint values
 
-return 0 if OK, error codes if float is outside range of TMP102
+return 0 if OK, error codes if float is outside range of TMP275
 **/
 int8_t degCToRaw13 (uint16_t *raw13, float *tempC)
 {
@@ -304,8 +303,8 @@ int8_t degCToRaw13 (uint16_t *raw13, float *tempC)
 Trigger a one-shot temperature conversion, wait for the new value, about 26 msec, and update 
 the variable passed.
 
-If the TMP102 is in continuous conversion mode, this places the part in One Shot mode, 
-triggers the conversion, waits for the result, updates the variable, and leaves the TMP102 in one shot mode.
+If the TMP275 is in continuous conversion mode, this places the part in One Shot mode, 
+triggers the conversion, waits for the result, updates the variable, and leaves the TMP275 in one shot mode.
 
 returns 0 if no error
 **/
@@ -316,7 +315,7 @@ uint8_t getOneShotDegC (float *tempC)
 
 
 /**
-Set the TMP102 mode to one-shot, with low power sleep in between
+Set the TMP275 mode to one-shot, with low power sleep in between
 
 mode: set to One Shot if true. 
 If false, sets to continuous sampling mode at whatever sample rate was last set.
@@ -329,9 +328,9 @@ int8_t setModeOneShot (boolean mode)
 }
 
 /**
-Set TMP102 mode to continuous sampling at the rate given.
+Set TMP275 mode to continuous sampling at the rate given.
 
-rate: must be one of the manifest constants such as TMP102_CFG_RATE_1HZ
+rate: must be one of the manifest constants such as TMP275_CFG_RATE_1HZ
 if rate is not one of the four supported, it is set to the default 4 Hz
 
 returns: 0 if successful

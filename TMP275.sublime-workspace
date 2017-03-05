@@ -151,7 +151,7 @@
 			"file": "Systronix_TMP275.h",
 			"settings":
 			{
-				"buffer_size": 9045,
+				"buffer_size": 9058,
 				"encoding": "Western (Windows 1252)",
 				"line_ending": "Windows"
 			}
@@ -160,7 +160,7 @@
 			"file": "Systronix_TMP275.cpp",
 			"settings":
 			{
-				"buffer_size": 10923,
+				"buffer_size": 10877,
 				"encoding": "UTF-8",
 				"line_ending": "Windows"
 			}
@@ -169,7 +169,7 @@
 			"file": "examples/TMP275_Test/TMP275_Test.ino",
 			"settings":
 			{
-				"buffer_size": 8970,
+				"buffer_size": 8900,
 				"encoding": "UTF-8",
 				"line_ending": "Windows"
 			}
@@ -224,18 +224,14 @@
 	},
 	"expanded_folders":
 	[
-		"/C/Users/Bruce/Documents/code/Arduino/libraries/Systronix_TMP275",
-		"/C/Users/Bruce/Documents/code/Arduino/libraries/Systronix_TMP275/examples",
-		"/C/Users/Bruce/Documents/code/Arduino/libraries/Systronix_TMP275/examples/TMP275_Test",
-		"/C/Users/Bruce/Documents/code/Arduino/libraries/Systronix_TMP102",
-		"/C/Users/Bruce/Documents/code/Arduino/libraries/Systronix_PCA9557",
-		"/C/Users/Bruce/Documents/code/Arduino/W5500_Test",
-		"/C/Users/Bruce/Documents/code/Arduino/W5500_Test/DhcpStressTest-M0Pro",
-		"/C/Users/Bruce/Documents/code/Arduino/W5500_Test/DhcpStressTest-T3",
-		"/C/Users/Bruce/Documents/code/Arduino/W5500_Test/NtpTest"
+		"/C/Users/BAB/Documents/code/Arduino/libraries/Systronix_TMP275",
+		"/C/Users/BAB/Documents/code/Arduino/libraries/Systronix_TMP102",
+		"/C/Users/BAB/Documents/code/Arduino/libraries/Systronix_TMP102/examples",
+		"/C/Users/BAB/Documents/code/Arduino/libraries/Systronix_TMP102/examples/TMP102_LibraryTest"
 	],
 	"file_history":
 	[
+		"/C/Users/BAB/Documents/code/Arduino/libraries/Systronix_TMP102/Systronix_TMP102.cpp",
 		"/C/Users/Bruce/Documents/code/Arduino/libraries/Systronix_TMP102/Systronix_TMP102.cpp",
 		"/C/Users/BAB/Documents/code/Arduino/libraries/Systronix_TMP102/examples/TMP102_LibraryTest/TMP102_LibraryTest.ino",
 		"/C/Users/BAB/Documents/code/Arduino/libraries/TeensyID/examples/ReadAll/ReadAll.ino",
@@ -362,8 +358,7 @@
 		"/C/Users/BAB/AppData/Roaming/Sublime Text 3/Local/Session.sublime_session",
 		"/C/Users/BAB/AppData/Roaming/Sublime Text 3/Packages/User/Preferences.sublime-settings",
 		"/C/Users/BAB/AppData/Roaming/Sublime Text 3/Packages/User/Default (Windows).sublime-keymap",
-		"/C/Users/BAB/AppData/Roaming/Sublime Text 3/Packages/Default/Default (Windows).sublime-keymap",
-		"/C/Users/BAB/Documents/code/Sublime_projects/Temp1.sublime-project"
+		"/C/Users/BAB/AppData/Roaming/Sublime Text 3/Packages/Default/Default (Windows).sublime-keymap"
 	],
 	"find":
 	{
@@ -371,7 +366,7 @@
 	},
 	"find_in_files":
 	{
-		"height": 0.0,
+		"height": 90.0,
 		"where_history":
 		[
 		]
@@ -381,6 +376,7 @@
 		"case_sensitive": true,
 		"find_history":
 		[
+			"102",
 			"TMP102",
 			"mac",
 			"teensy_mac",
@@ -507,8 +503,7 @@
 			"printf",
 			"key_data",
 			"(menu_obj* menu_ptr)",
-			"(menu_obj*)",
-			"(menu_obj*"
+			"(menu_obj*)"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -516,6 +511,7 @@
 		"regex": false,
 		"replace_history":
 		[
+			"275",
 			"TMP275",
 			"t_mac",
 			"",
@@ -653,28 +649,29 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 9045,
+						"buffer_size": 9058,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								2814,
-								2814
+								4852,
+								4852
 							]
 						],
 						"settings":
 						{
+							"function_name_status_row": 130,
 							"spell_check": true,
 							"syntax": "Packages/C++/C++.sublime-syntax",
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 953.0,
+						"translation.y": 2549.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 1,
+					"stack_index": 2,
 					"type": "text"
 				},
 				{
@@ -683,27 +680,28 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 10923,
+						"buffer_size": 10877,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								837,
-								802
+								1345,
+								1345
 							]
 						],
 						"settings":
 						{
+							"function_name_status_row": 49,
 							"syntax": "Packages/C++/C++.sublime-syntax",
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 60.0,
+						"translation.y": 546.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 2,
+					"stack_index": 1,
 					"type": "text"
 				},
 				{
@@ -712,25 +710,26 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 8970,
+						"buffer_size": 8900,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								510,
-								510
+								1244,
+								1244
 							]
 						],
 						"settings":
 						{
+							"function_name_status_row": -1,
 							"syntax": "Packages/Arduino-like IDE/Arduino.tmLanguage",
 							"tab_size": 2,
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 240.0,
+						"translation.y": 504.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 0,
@@ -786,7 +785,7 @@
 	"project": "TMP275.sublime-project",
 	"replace":
 	{
-		"height": 80.0
+		"height": 62.0
 	},
 	"save_all_on_build": true,
 	"select_file":

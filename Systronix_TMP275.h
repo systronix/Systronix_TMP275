@@ -118,9 +118,8 @@ for example TMP275_CFG_AL = 'AL', the Alert config bit
   We want 12-bit resolution so that is a config value of 0x60
 
   Note that bit 7 (OS) always reads as zero!
-*/
-#define TMP275_CFG_DEFAULT_RD 0x00
-#define TMP275_CFG_DEFAULT_WR 0x60
+*/	
+#define TMP275_CFG_POR_RD 0x0C90	// always reads as 0x00 after POR
 
 /* One-shot/Conversion Ready is Config bit 7
   When in shutdown mode (SD=1), setting OS starts a single conversion
@@ -203,9 +202,9 @@ class Systronix_TMP275
 		uint8_t BaseAddr;
 														// i2c_t3 error counters
 
-		void		setup (uint8_t base);				// constructor
+		Systronix_TMP275 (uint8_t base);				// constructor	
 		void		begin (void);
-		uint8_t		init (uint16_t);					// device present and communicating detector
+		uint8_t		init (uint8_t config_value);		// device present and communicating detector
 
 		float		raw12_to_C (uint16_t raw13);			// temperature conversion functions
 		float		raw12_to_F (uint16_t raw13);
