@@ -6,6 +6,12 @@
 		},
 		{
 			"path": "C:\\Users\\BAB\\Documents\\code\\Arduino\\libraries\\Systronix_TMP102"
+		},
+		{
+			"path": "C:\\Users\\Bruce\\Documents\\code\\Arduino\\libraries\\Systronix_PCA9557"
+		},
+		{
+			"path": "C:\\arduino-1.8.1\\hardware\\teensy\\avr\\libraries\\i2c_t3"
 		}
 	]
 }

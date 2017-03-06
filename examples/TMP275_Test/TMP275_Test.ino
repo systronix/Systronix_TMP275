@@ -34,32 +34,32 @@ Compiler has major whines if called as shown in the online Wire reference.
  * 3 = max, even more or less trivial message are emitted
  * 4 = emit debug info which checks very basic data conversion, etc
  */
- byte DEBUG = 1;
+ byte DEBUG = 3;
 
 uint16_t rawtemp;
 uint16_t faketemp;
 
 uint16_t dtime;  // delay in loop
 
-uint16_t configOptions;
+uint8_t configOptions;
 
 boolean fake;    // if true use simulated temperature data
 
 float temperature = 0.0;
+  uint16_t raw16 = 0;  // place to put what we just read 16 bits
+  uint8_t raw8 = 0;
 
 Systronix_TMP275 tmp275_48(0x48);    // We can pass constructor a value
 
 /* ========== SETUP ========== */
 void setup(void) 
 {
-  uint16_t raw16 = 0;  // place to put what we just read 16 bits
-  uint8_t raw8 = 0;
+
 
 //  uint16_t wrt16=0;  // temp write variable
   int8_t stat = -1;
 //  int16_t temp_int16 = 0;
   
-  delay (2000);      // give some time to open monitor window
   Serial.begin(115200);     // use max baud rate
   // Teensy3 doesn't reset with Serial Monitor as do Teensy2/++2, or wait for Serial Monitor window
   // Wait here for 10 seconds to see if we will use Serial Monitor, so output is not lost
@@ -78,65 +78,38 @@ void setup(void)
   // start TMP275 library
   tmp275_48.begin();
 
-  // start with default config
-  Serial.print ("SetCFG=");
-  Serial.print (TMP275_CFG_RES12, HEX);
-  Serial.print (" ");
-//  stat = tmp275_48.writeRegister(TMP275_CONF_REG_PTR, TMP275_CFG_DEFAULT_WR);
-	stat = tmp275_48.init(TMP275_CFG_DEFAULT_WR);
-//  if ( 0!= stat) Serial.print (" writeReg error! ");
-  if (SUCCESS != stat) Serial.print (" writeReg error! ");
-  stat = tmp275_48.register8Read (&raw8);
-//  if ( 2!= stat) Serial.print (" readReg error! ");
-  if (SUCCESS != stat) Serial.print (" readReg error! ");
-  Serial.print("CFG:");
-  Serial.print(raw8, HEX);
-  Serial.print(" ");    
-  
   configOptions = 0x0;  // 
-  configOptions |= TMP275_CFG_EM;  // set Extended Mode
-  configOptions |= TMP275_CFG_RATE_1HZ;  // 1Hz conversion
-  configOptions |= TMP275_CFG_SD;        // sleep between conversions
+  configOptions |= TMP275_CFG_RES12;
+	stat = tmp275_48.init(configOptions);
+  Serial.printf(" write CFG: %X\r\n", configOptions); 
+
+  if (SUCCESS != stat) Serial.print (" config init error! ");
+  stat = tmp275_48.configRead (&raw8);
+  if (SUCCESS != stat) Serial.print (" config read error! ");
+
+  Serial.printf(" read CFG: %X\r\n", raw8); 
   
-  Serial.print ("SetCFG=");
-  Serial.print (configOptions, HEX);
-  Serial.print (" ");
-  stat = tmp275_48.writeRegister(TMP275_CONF_REG_PTR, configOptions);
-//  if ( 0!= stat) Serial.print (" writeReg error! ");
-  if (SUCCESS != stat) Serial.print (" writeReg error! ");
-  stat = tmp275_48.readRegister (&raw16);
-//  if ( 2!= stat) Serial.print (" readReg error! ");
-  if (SUCCESS != stat) Serial.print (" readReg error! ");
-  Serial.print("CFGnow:");
-  Serial.print(raw16, HEX);
-  Serial.print(" ");  
+  delay(250);    // 220 msec for conversion
   
-  delay(30);    // 26 msec for conversion
-  stat = tmp275_48.writePointer(TMP275_CONF_REG_PTR);
-  stat = tmp275_48.readRegister (&raw16);
-  Serial.print("CFG:");
-  Serial.print(raw16, HEX);
-  Serial.print(" ");
-  
-  stat = tmp275_48.writePointer(TMP275_TLOW_REG_PTR);
-  stat = tmp275_48.readRegister (&raw16);
+  stat = tmp275_48.pointerWrite(TMP275_TLOW_REG_PTR);
+  stat = tmp275_48.register16Read (&raw16);
   Serial.print("Tlo:");
   Serial.print(raw16, HEX);
   Serial.print(" ");
   
-  stat = tmp275_48.writePointer(TMP275_THIGH_REG_PTR);
-  stat = tmp275_48.readRegister (&raw16);
+  stat = tmp275_48.pointerWrite(TMP275_THIGH_REG_PTR);
+  stat = tmp275_48.register16Read (&raw16);
   Serial.print("Thi:");
   Serial.print(raw16, HEX);
   Serial.print(" ");
   
   // leave the pointer set to read temperature
-  stat = tmp275_48.writePointer(TMP275_TEMP_REG_PTR);
+  stat = tmp275_48.pointerWrite(TMP275_TEMP_REG_PTR);
   
 //  // fake temp  
 //  fake = true;
 //  dtime = 0;  // fast loop
-//  faketemp = (uint16_t)0x4B00;  // max 13-bit value in raw 16-bit format
+//  faketemp = (uint16_t)0x7FF;  // max 12-bit value in raw 16-bit format
   
   // use real temperature data
   fake = false;      // switch to real data after full cycle of simulated
@@ -157,7 +130,7 @@ void setup(void)
 
 uint16_t good=0;
 uint16_t bad=0;
-uint16_t raw16;
+
 
 /* ========== LOOP ========== */
 void loop(void) 
@@ -185,33 +158,23 @@ void loop(void)
     if (DEBUG >=3)
     {
       Serial.print("ALpin:");
-      Serial.print(digitalRead(19));
+      Serial.print(digitalRead(3));
       Serial.print(" ");
     }
   
-    stat = tmp275_48.writePointer(TMP275_CONF_REG_PTR);
+    stat = tmp275_48.pointerWrite(TMP275_CONF_REG_PTR);
     if (DEBUG >=3)
     {
-      stat = tmp275_48.readRegister (&raw16);
+      stat = tmp275_48.configRead (&raw8);
       Serial.print("CFG:");
-      Serial.print(raw16, HEX);
+      Serial.print(raw8, HEX);
       Serial.print(" ");
     }
   
-    configOptions |= TMP275_CFG_OS;        // start One Shot conversion
-    stat = tmp275_48.writeRegister (TMP275_CONF_REG_PTR, configOptions);
-  
-    if (DEBUG >=2)
-    {  
-      stat = tmp275_48.readRegister (&raw16);
-      Serial.print("CFG:");
-      Serial.print(raw16, HEX);
-      Serial.print(" ");
-    }
     // pointer set to read temperature
-    stat = tmp275_48.writePointer(TMP275_TEMP_REG_PTR); 
+    stat = tmp275_48.pointerWrite(TMP275_TEMP_REG_PTR); 
     // read two bytes of temperature
-    stat = tmp275_48.readRegister (&rawtemp);
+    stat = tmp275_48.register16Read (&rawtemp);
 //    if (2==stat) good++;
     if (SUCCESS==stat) good++;
     else bad++;
@@ -226,13 +189,13 @@ void loop(void)
     Serial.print (" ");
   }
 
-  temp = tmp275_48.raw13ToC(rawtemp);
+  temp = tmp275_48.raw12_to_c(rawtemp);
   
   temperature = temp;  // for Ethernet client
   
   if (DEBUG >= 2)
   {
-    Serial.print("ms13:0x");
+    Serial.print("ms12:0x");
     Serial.print(rawtemp, HEX);
     Serial.print (" ");
   }

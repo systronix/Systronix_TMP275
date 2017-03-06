@@ -58,16 +58,6 @@ This library was developed and tested on Teensy3 (ARM CortexM4) with I2C_T3 libr
 
 ------------------------------------------------------------------------------*/
 
-
-/** --------  Device Addressing --------
-TMP275 base address is 0x48 (B 1001 000x) where x is R/W
-
-This is confusing because the address part is just the the upper 7 bits, so if considered
-alone, and right-justified, that is  B 0100 1000 which is 0x48 which is how Arduino wants it.
-If A[2..0] are low, base is 0x48. If A[2..0] are 100, base is 0x4C.
-
--------------------------------------*/
-
 #include <Arduino.h>
 
 // Use Teensy improved I2C library
@@ -83,6 +73,17 @@ If A[2..0] are low, base is 0x48. If A[2..0] are 100, base is 0x4C.
 #define		FAIL	0xFF
 #define		ABSENT	0xFD
 
+/** --------  Device Addressing --------
+TMP275 base address is 0x48 (B 1001 000x) where x is R/W
+
+This is confusing because the address part is just the the upper 7 bits, so if considered
+alone, and right-justified, that is  B 0100 1000 which is 0x48 which is how Arduino wants it.
+If A[2..0] are low, base is 0x48. If A[2..0] are 100, base is 0x4C.
+If A[2..0] are high, base is 0x4F, the max
+-------------------------------------*/
+#define TMP_275_ADDR_MIN 0x48	// min and default I2C address
+#define TMP_275_ADDR_MAX 0x4F
+
 /** --------  Register Addresses --------
 The two lsb of the pointer register hold the register bits, which
 are used to address one of the four directly-accessible registers.
@@ -93,8 +94,8 @@ There are four pointer addresses:
 	If temp is negative (msb=0) the value is in 2's complement form,
 	so take the whole binary value, complement it, and add 1.
 01  Configuration Register (Read/Write) 8 bits, MSB first
-10  TLOW Limit Register (Read/Write)
-11  THIGH Limit Register (Read/Write)
+10  TLOW Limit Register (Read/Write) POR = 80 deg C
+11  THIGH Limit Register (Read/Write) POR = 75 deg C
 */
 
 #define TMP275_TEMP_REG_PTR 0x00  // 16-bit temperature register, read only
@@ -105,7 +106,7 @@ There are four pointer addresses:
 /** --------  Configuration --------
 OR these bits together appropriately, one choice from each option group
 and write to the config register for the desired option
-This is a an 8-bit register, bits 7..0 
+This is an 8-bit register, bits 7..0 
 I have used the same designation as the data sheet, to be consistent,
 instead of making names longer and perhaps more readable;
 for example TMP275_CFG_AL = 'AL', the Alert config bit
@@ -137,37 +138,41 @@ for example TMP275_CFG_AL = 'AL', the Alert config bit
 // 11 = 12 bits, 0.0625 °C resolution
 // I don't see a use for anything less than 12 bit mode
 
-#define TMP275_CFG_RES12 0x11 << 5  // if both bits set, 12-bit mode *our default*
+#define TMP275_CFG_RES12 0x60
 #define TMP275_CFG_RES9 0x00 		// both bits zero, 9-bit mode
 
 // Fault Queue Config bits 4,3
 // how many faults generate an Alert based on T-high and T-low registers
-#define TMP275_CFG_FLTQ_6 0x11 << 3	// 6 consecutive faults
-#define TMP275_CFG_FLTQ_4 0x10 << 3	// 4 consecutive faults
-#define TMP275_CFG_FLTQ_2 0x01 << 3	// 2 consecutive faults
+#define TMP275_CFG_FLTQ_6 0x18	// 6 consecutive faults
+#define TMP275_CFG_FLTQ_4 0x10	// 4 consecutive faults
+#define TMP275_CFG_FLTQ_2 0x08 	// 2 consecutive faults
 #define TMP275_CFG_FLTQ_1 0x00  // 1 consecutive fault *default*
 
 // Polarity bit is Config bit 2, adjusts polarity of Alert pin output
 // POL=0 means Alert is active LOW
 // POL=1 means Alert is active HIGH
-#define TMP275_CFG_POL 0x01 << 2  // 0 = Alert active LOW *default*
+#define TMP275_CFG_POL 0x04  // 0 = Alert active LOW *default*
 
 // TM Thermostat Mode is Config bit 1
 // Tells TMP275 to operate in Comparator (TM=0) or Interrupt mode (TM=1)
-#define TMP275_CFG_TM 0x01 << 1  // 0 = Comparator mode *default*
+#define TMP275_CFG_TM 0x02  // 0 = Comparator mode *default*
 
-// Shutdown mode Config bit 0
-// Set this bit to be low power (0.1 uA) between single conversions
-// In SD mode you set the OS (one shot) bit to start a single conversion,
-// it converts once then goes back to sleep.
+/** Shutdown mode Config bit 0
+Set this bit to be low power (0.1 uA) between single conversions
+In SD mode you set the OS (one shot) bit to start a single conversion,
+it converts once then goes back to sleep. But the new conversion takes
+220 msec in 12-bit mode so if you read right away you will get the previous
+conversion value.
+*/
+
 #define TMP275_CFG_SD 0x01  // 0 = continuous conversion state *default*
 
 class Systronix_TMP275
 {
 	protected:
-		uint8_t		_base;								// base address for this instance; four possible values
-		uint8_t		_pointer_reg;						// copy of the pointer register value so we know where it's pointing
-		void		tally_errors (uint8_t);				// maintains the i2c_t3 error counters
+		uint8_t		_base;						// base address for this instance; four possible values
+		uint8_t		_pointer_reg;				// copy of the pointer register value so we know where it's pointing
+		void		tally_errors (uint8_t);		// maintains the i2c_t3 error counters
 
 	public:
 		// Instance-specific properties
@@ -181,8 +186,8 @@ class Systronix_TMP275
 		struct
 			{
 			uint16_t	raw_temp;						// most recent
-			uint16_t	t_high = 0x0C90;				// preset to minimum temperature value (-55C in raw12 format)
-			uint16_t	t_low = 0x07FF;  				// preset to max temperature value (128C in raw12 format)
+			uint16_t	t_high = 0x0C90;				// preset to 0x5000 (80C in raw12 format) (datasheet Table 1)
+			uint16_t	t_low = 0x07FF;  				// preset to 0x4B00 (75C in raw12 format)
 			float		deg_c;        
 			float		deg_f;
 			bool		fresh;							// data is good and fresh TODO: how does one know that the data are not 'fresh'?
@@ -196,32 +201,36 @@ class Systronix_TMP275
 			uint32_t	rcv_addr_nack_count;			// slave did not ack address
 			uint32_t	rcv_data_nack_count;			// slave did not ack data
 			uint32_t	other_error_count;				// arbitration lost or timeout
-			boolean		exists;							// set false after an unsuccessful i2c transaction
+			boolean		exists;							// set false is sensor can't be reached at base address
+			boolean		base_clipped;					// base passed to constructor was out of range
 			} control;
 
 		uint8_t BaseAddr;
 														// i2c_t3 error counters
 
-		Systronix_TMP275 (uint8_t base);				// constructor	
-		void		begin (void);
-		uint8_t		init (uint8_t config_value);		// device present and communicating detector
+		Systronix_TMP275 (uint8_t base);				// constructor w/base passed in
+		Systronix_TMP275 ();							// default constructor
+		~Systronix_TMP275();							// deconstructor
 
-		float		raw12_to_C (uint16_t raw13);			// temperature conversion functions
-		float		raw12_to_F (uint16_t raw13);
+		void		begin (void);
+		uint8_t		init (uint8_t config_value);		// set operation mode, check device present and communicating
+
+		float		raw12_to_c (uint16_t raw13);			// temperature conversion functions
+		float		raw12_to_f (uint16_t raw13);
 		uint8_t		get_temperature_data (void);
 
 		uint8_t		pointerWrite (uint8_t pointer);		// i2c bus dependent functions
 		uint8_t		register16Write (uint8_t pointer, uint16_t data);	// write to 16-bit registers
-		uint8_t		register8Write (uint8_t pointer, uint8_t data);		// write to 8-bit registers
+		uint8_t		configWrite (uint8_t data);			// write to 8-bit config register)
 		uint8_t		register16Read (uint16_t *data);
-		uint8_t		register8Read (uint8_t *data);
+		uint8_t		configRead (uint8_t *data);			// read 8-bit config register
 
 		uint8_t		tempReadDegC (float *tempC);		// these functions not yet implemented; all return FAIL
 		uint8_t		tempReadDegF (float *tempF);
 		uint8_t		degCToRaw12 (uint16_t *raw13, float *tempC);	// use to store value in comparison registers
 		uint8_t		degFToRaw12 (uint16_t *raw13, float *tempC);
 		uint8_t		getOneShotDegC (float *tempC);		// TODO may not be best approach for TMP275
-		uint8_t		setModeOneShot (boolean mode);		// ditto
+		uint8_t		setShutdown (boolean sd);		// ditto
 
 	private:
 
