@@ -49,7 +49,7 @@ float temperature = 0.0;
   uint16_t raw16 = 0;  // place to put what we just read 16 bits
   uint8_t raw8 = 0;
 
-Systronix_TMP275 tmp275_48(0x48);    // We can pass constructor a value
+Systronix_TMP275 tmp275_48(TMP_275_SLAVE_ADDR_0);    // We can pass constructor a value
 
 /* ========== SETUP ========== */
 void setup(void) 
@@ -66,7 +66,7 @@ void setup(void)
   while((!Serial) && (millis()<10000));    // wait until serial monitor is open or timeout, which seems to fall through
  
   Serial.print("TMP275 Library Test Code at 0x");
-  Serial.println(tmp275_48.BaseAddr, HEX); 
+  Serial.println(tmp275_48.base_address(), HEX); 
    
 //  int8_t flag = -1;  // I2C returns 0 if no error
   
@@ -80,6 +80,8 @@ void setup(void)
 
   configOptions = 0x0;  // 
   configOptions |= TMP275_CFG_RES12;
+
+  // initialize sensor
 	stat = tmp275_48.init(configOptions);
   Serial.printf(" write CFG: %X\r\n", configOptions); 
 
@@ -88,6 +90,14 @@ void setup(void)
   if (SUCCESS != stat) Serial.print (" config read error! ");
 
   Serial.printf(" read CFG: %X\r\n", raw8); 
+
+  if ( tmp275_48.base_clipped() )
+    Serial.printf("base address out of range, clipped to 0x%u", tmp275_48.base_address());
+
+  if ( tmp275_48.exists() )
+    Serial.printf("Sensor exists\r\n");
+  else 
+    Serial.printf("Sensor does not exist!\r\n");
   
   delay(250);    // 220 msec for conversion
   

@@ -16,21 +16,20 @@
 
 Systronix_TMP275::Systronix_TMP275(uint8_t base)
 	{
-	if (base < TMP_275_ADDR_MIN) 
+	if (base < TMP_275_SLAVE_ADDR_0) 
 		{
-		base = TMP_275_ADDR_MIN;
-		control.base_clipped = true;
+		_base = TMP_275_SLAVE_ADDR_0;
+		_base_clipped = true;
 		}
-	else if (base > TMP_275_ADDR_MAX) 
+	else if (base > TMP_275_SLAVE_ADDR_7) 
 		{
-		base = TMP_275_ADDR_MAX;
-		control.base_clipped = true;
+		_base = TMP_275_SLAVE_ADDR_7;
+		_base_clipped = true;
 		}
 	else
 		{
 		_base = base;
-		BaseAddr = base;
-		control.base_clipped = false;
+		_base_clipped = false;
 		}
 
 	}
@@ -38,14 +37,34 @@ Systronix_TMP275::Systronix_TMP275(uint8_t base)
 // default constructor
 Systronix_TMP275::Systronix_TMP275()
 	{
-	_base = TMP_275_ADDR_MIN;
-	BaseAddr = _base;
+	_base = TMP_275_SLAVE_ADDR_0;
+	_base_clipped = false;	// since it's constant it must be OK
 	}
 
 // destructor
 Systronix_TMP275::~Systronix_TMP275()
 {
 	// Anything to do here? Leave I2C as master? Set flag?
+}
+
+/**
+	Variables publicly read-only, privately read/write
+*/
+// sensor is instantiated and responds to I2C at base address
+boolean Systronix_TMP275::exists()
+{
+	return _exists;
+}
+
+// base address passed in constructor was out of range so clipped to value min <= base <= max
+boolean Systronix_TMP275::base_clipped()
+{
+	return _base_clipped;
+}
+
+uint8_t Systronix_TMP275::base_address()
+{
+	return _base;
 }
 
 
@@ -79,18 +98,18 @@ uint8_t Systronix_TMP275::init (uint8_t config)
 
 	if (2 != written)
 		{
-		control.exists = false;							// unsuccessful i2c_t3 library call
+		_exists = false;							// unsuccessful i2c_t3 library call
 		return FAIL;
 		}
 	
   	if (Wire.endTransmission())
 		{
-		control.exists = false;							// unsuccessful i2c transaction
+		_exists = false;							// unsuccessful i2c transaction
 		return FAIL;
 		}
 	
-	control.exists = true;								// if here, we appear to have communicated with
-	return SUCCESS;										// the sensor
+	_exists = true;								// if here, we appear to have communicated with
+	return SUCCESS;								// the sensor
 	}
 
 
@@ -117,7 +136,7 @@ void Systronix_TMP275::tally_errors (uint8_t error)
 		case 2:					// slave did not ack address (write)
 		case 5:					// from call to status() (read)
 			control.rcv_addr_nack_count ++;
-			control.exists = false;
+			_exists = false;
 			break;
 		case 3:					// slave did not ack data (write)
 		case 6:					// from call to status() (read)
@@ -126,7 +145,7 @@ void Systronix_TMP275::tally_errors (uint8_t error)
 		case 4:					// arbitration lost (write) or timeout (read/write) or auto-reset failed
 		case 7:					// arbitration lost from call to status() (read)
 			control.other_error_count ++;
-			control.exists=false;
+			_exists=false;
 		}
 	}
 
@@ -206,7 +225,7 @@ The last value written to the Pointer Register persists until changed.
 
 uint8_t Systronix_TMP275::pointerWrite (uint8_t pointer)
 	{
-	if (!control.exists)								// exit immediately if device does not exist
+	if (!_exists)								// exit immediately if device does not exist
 		return ABSENT;
 
 	_pointer_reg = pointer;								// keep a copy for use by other functions
@@ -236,7 +255,7 @@ uint8_t Systronix_TMP275::configWrite (uint8_t data)
 	{
 	uint8_t written;									// number of bytes written
 
-	if (!control.exists)								// exit immediately if device does not exist
+	if (!_exists)								// exit immediately if device does not exist
 		return ABSENT;
 
 	Wire.beginTransmission (_base);						// base address
@@ -266,7 +285,7 @@ uint8_t Systronix_TMP275::configWrite (uint8_t data)
 
 uint8_t Systronix_TMP275::configRead (uint8_t *data)
 	{
-	if (!control.exists)								// exit immediately if device does not exist
+	if (!_exists)								// exit immediately if device does not exist
 		return ABSENT;
 
 	if (_pointer_reg != TMP275_CONF_REG_PTR)			// if not pointing to config reg then do so
@@ -297,7 +316,7 @@ uint8_t Systronix_TMP275::register16Write (uint8_t pointer, uint16_t data)
 	{
 	uint8_t written;									// number of bytes written
 
-	if (!control.exists)								// exit immediately if device does not exist
+	if (!_exists)								// exit immediately if device does not exist
 		return ABSENT;
 
 	Wire.beginTransmission (_base);						// base address
@@ -330,7 +349,7 @@ uint8_t Systronix_TMP275::register16Write (uint8_t pointer, uint16_t data)
 
 uint8_t Systronix_TMP275::register16Read (uint16_t *data)
 	{
-	if (!control.exists)								// exit immediately if device does not exist
+	if (!_exists)								// exit immediately if device does not exist
 		return ABSENT;
 
 	if (2 != Wire.requestFrom(_base, 2, I2C_STOP))
