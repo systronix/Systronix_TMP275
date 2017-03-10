@@ -34,7 +34,7 @@ Compiler has major whines if called as shown in the online Wire reference.
  * 3 = max, even more or less trivial message are emitted
  * 4 = emit debug info which checks very basic data conversion, etc
  */
- byte DEBUG = 3;
+ byte DEBUG = 0;
 
 uint16_t rawtemp;
 uint16_t faketemp;
@@ -49,7 +49,7 @@ float temperature = 0.0;
   uint16_t raw16 = 0;  // place to put what we just read 16 bits
   uint8_t raw8 = 0;
 
-Systronix_TMP275 tmp275_48(TMP_275_SLAVE_ADDR_0);    // We can pass constructor a value
+Systronix_TMP275 tmp275_48(TMP275_SLAVE_ADDR_0);    // We can pass constructor a value
 
 /* ========== SETUP ========== */
 void setup(void) 

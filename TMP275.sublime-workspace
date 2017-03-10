@@ -151,7 +151,7 @@
 			"file": "Systronix_TMP275.h",
 			"settings":
 			{
-				"buffer_size": 9058,
+				"buffer_size": 9538,
 				"encoding": "Western (Windows 1252)",
 				"line_ending": "Windows"
 			}
@@ -160,7 +160,7 @@
 			"file": "Systronix_TMP275.cpp",
 			"settings":
 			{
-				"buffer_size": 10877,
+				"buffer_size": 13037,
 				"encoding": "UTF-8",
 				"line_ending": "Windows"
 			}
@@ -169,7 +169,7 @@
 			"file": "examples/TMP275_Test/TMP275_Test.ino",
 			"settings":
 			{
-				"buffer_size": 8900,
+				"buffer_size": 7698,
 				"encoding": "UTF-8",
 				"line_ending": "Windows"
 			}
@@ -376,6 +376,7 @@
 		"case_sensitive": true,
 		"find_history":
 		[
+			"TMP_275",
 			"102",
 			"TMP102",
 			"mac",
@@ -502,8 +503,7 @@
 			"act_ptr",
 			"printf",
 			"key_data",
-			"(menu_obj* menu_ptr)",
-			"(menu_obj*)"
+			"(menu_obj* menu_ptr)"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -511,6 +511,7 @@
 		"regex": false,
 		"replace_history":
 		[
+			"TMP275",
 			"275",
 			"TMP275",
 			"t_mac",
@@ -649,26 +650,26 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 9058,
+						"buffer_size": 9538,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								4852,
-								4852
+								2466,
+								2466
 							]
 						],
 						"settings":
 						{
-							"function_name_status_row": 130,
+							"function_name_status_row": 72,
 							"spell_check": true,
 							"syntax": "Packages/C++/C++.sublime-syntax",
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 2549.0,
+						"translation.y": 743.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 2,
@@ -680,25 +681,25 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 10877,
+						"buffer_size": 13037,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								1345,
-								1345
+								733,
+								739
 							]
 						],
 						"settings":
 						{
-							"function_name_status_row": 49,
+							"function_name_status_row": 39,
 							"syntax": "Packages/C++/C++.sublime-syntax",
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 546.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 1,
@@ -710,26 +711,26 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 8900,
+						"buffer_size": 7698,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								1244,
-								1244
+								911,
+								911
 							]
 						],
 						"settings":
 						{
-							"function_name_status_row": -1,
+							"function_name_status_row": 36,
 							"syntax": "Packages/Arduino-like IDE/Arduino.tmLanguage",
 							"tab_size": 2,
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 504.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 0,
@@ -805,7 +806,7 @@
 		[
 			[
 				"",
-				"C:\\Users\\BAB\\Documents\\code\\Sublime_projects\\Ethernet2.sublime-project"
+				"C:\\Users\\BAB\\Documents\\code\\Arduino\\libraries\\Systronix_PCA9548A\\PCA9548A.sublime-project"
 			]
 		],
 		"width": 380.0

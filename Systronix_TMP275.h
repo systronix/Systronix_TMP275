@@ -81,14 +81,14 @@ alone, and right-justified, that is  B 0100 1000 which is 0x48 which is how Ardu
 If A[2..0] are low, base is 0x48. If A[2..0] are 100, base is 0x4C.
 If A[2..0] are high, base is 0x4F, the max
 -------------------------------------*/
-#define TMP_275_SLAVE_ADDR_0 0x48
-#define TMP_275_SLAVE_ADDR_1 0x49
-#define TMP_275_SLAVE_ADDR_2 0x4A
-#define TMP_275_SLAVE_ADDR_3 0x4B
-#define TMP_275_SLAVE_ADDR_4 0x4C
-#define TMP_275_SLAVE_ADDR_5 0x4D
-#define TMP_275_SLAVE_ADDR_6 0x4E
-#define TMP_275_SLAVE_ADDR_7 0x4F
+#define TMP275_SLAVE_ADDR_0 0x48
+#define TMP275_SLAVE_ADDR_1 0x49
+#define TMP275_SLAVE_ADDR_2 0x4A
+#define TMP275_SLAVE_ADDR_3 0x4B
+#define TMP275_SLAVE_ADDR_4 0x4C
+#define TMP275_SLAVE_ADDR_5 0x4D
+#define TMP275_SLAVE_ADDR_6 0x4E
+#define TMP275_SLAVE_ADDR_7 0x4F
 
 
 /** --------  Register Addresses --------
@@ -210,7 +210,8 @@ class Systronix_TMP275
 			uint32_t	rcv_addr_nack_count;			// slave did not ack address
 			uint32_t	rcv_data_nack_count;			// slave did not ack data
 			uint32_t	other_error_count;				// arbitration lost or timeout
-			} control;
+			uint32_t	total_error_count;				// sum of all errors. Yes I know it's a 32-bit uint. It stops at max value, doesn't wrap.
+			} error;
 
 		boolean exists();
 		boolean base_clipped();
