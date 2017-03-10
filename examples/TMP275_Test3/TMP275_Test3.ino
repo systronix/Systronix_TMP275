@@ -200,26 +200,29 @@ void loop(void)
   delay(1); // separate reads on scope
 
   stat = tmp275_49.register16Read (&rawtemp2);
-  temp2 = tmp275_49.raw12_to_c(rawtemp2);
-  if (stat != SUCCESS) Serial.printf("Sensor 2 error, stat=%u\r\n", stat);
+  if (stat != SUCCESS) 
+  {
+    Serial.printf("Sensor 2 error, stat=0x%hhX\r\n", stat&0x0FF);
+    temp2 = -99.9999;
+  }
+  else temp2 = tmp275_49.raw12_to_c(rawtemp2);
 
   stat = tmp275_50.register16Read (&rawtemp3);
-  temp3 = tmp275_50.raw12_to_c(rawtemp3);
-  if (stat != SUCCESS) Serial.printf("Sensor 3 error, stat=%u\r\n", stat);  
+  if (stat != SUCCESS) 
+  {
+    // Serial.printf("Sensor 3 error, stat=0x%hhX\r\n", stat&0x0FF);  // stat=0xFD
+    // Serial.printf("Sensor 3 error, stat=0x%hhX\r\n", stat);  //  stat=0xFFFD
+  Serial.printf("Sensor 3 error, stat=0x%2.2X\r\n", stat);  // stat=0xFFFFFFFD
+
+
+    temp3 = -99.9999;
+  }
+  else temp3 = tmp275_50.raw12_to_c(rawtemp3);
 
   temperature = temp;  // for Ethernet client
   
-
-  
- Serial.print (temp, 4);       // 2 dec pts good enough for real data 0.0625 deg C per count
- Serial.print (" ");
- Serial.print (temp2, 4);
- Serial.print (" ");
- Serial.print (temp3, 4);
-
-  Serial.print (" C ");
-  
-  Serial.println();
+ 
+ Serial.printf ("%6.4f %6.4f %6.4f C\r\n", temp, temp2, temp3);       // real data 0.0625 deg C per count
   
   
   delay(dtime);

@@ -69,9 +69,13 @@ This library was developed and tested on Teensy3 (ARM CortexM4) with I2C_T3 libr
 #include <Wire.h>	// for AVR I2C library
 #endif
 
-#define		SUCCESS	0
-#define		FAIL	0xFF
-#define		ABSENT	0xFD
+// #define		SUCCESS	0
+// #define		FAIL	0xFF
+#define		ABSENT	(uint8_t) 0xFD
+
+const uint8_t SUCCESS = 0x0;
+const uint8_t FAIL = 0xFF;
+//const uint8_t ABSENT = 0x0FD;
 
 /** --------  Device Addressing --------
 TMP275 base address is 0x48 (B 1001 000x) where x is R/W
