@@ -49,10 +49,7 @@ Systronix_TMP275 tmp275_50(TMP275_SLAVE_ADDR_2);
 void setup(void) 
 {
 
-
-//  uint16_t wrt16=0;  // temp write variable
-  int8_t stat = -1;
-//  int16_t temp_int16 = 0;
+  uint8_t stat = 0;
   
   Serial.begin(115200);     // use max baud rate
   // Teensy3 doesn't reset with Serial Monitor as do Teensy2/++2, or wait for Serial Monitor window
@@ -185,7 +182,7 @@ uint16_t bad=0;
 void loop(void) 
 {
 //  int16_t temp0;
-  int8_t stat=-1;  // status flag
+  uint8_t stat=0;  // status flag
   float temp, temp2, temp3;
   
   Serial.print("@");
@@ -214,6 +211,8 @@ void loop(void)
     // Serial.printf("Sensor 3 error, stat=0x%hhX\r\n", stat);  //  stat=0xFFFD
   Serial.printf("Sensor 3 error, stat=0x%2.2X\r\n", stat);  // stat=0xFFFFFFFD
 
+Serial.printf("stat test %#2.2X\n", stat);
+Serial.printf("ABSENT test %#2.2X\n", ABSENT);
 
     temp3 = -99.9999;
   }

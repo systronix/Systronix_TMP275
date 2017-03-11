@@ -7,12 +7,12 @@
 
 #include <Systronix_TMP275.h>	
 
-//---------------------------< CONSTRUCTOR >--------------------------------------------------------------------
-/*!
+/**---------------------------< CONSTRUCTOR >----------------------------------
+
 	@brief  Instantiates a new TMP275 class to use the given base address
 	base is clipped to min or max if necessary
 
-*/
+-----------------------------------------------------------------------------*/
 
 Systronix_TMP275::Systronix_TMP275(uint8_t base)
 	{

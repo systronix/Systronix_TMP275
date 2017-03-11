@@ -71,7 +71,8 @@ This library was developed and tested on Teensy3 (ARM CortexM4) with I2C_T3 libr
 
 // #define		SUCCESS	0
 // #define		FAIL	0xFF
-#define		ABSENT	(uint8_t) 0xFD
+// #define		ABSENT	(uint8_t) 0xFD
+#define		ABSENT	0xFD
 
 const uint8_t SUCCESS = 0x0;
 const uint8_t FAIL = 0xFF;
