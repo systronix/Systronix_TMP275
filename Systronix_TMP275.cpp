@@ -103,8 +103,7 @@ uint8_t Systronix_TMP275::init (uint8_t config)
 	if (2 != error.ret_val)
 		{
 		// error in buffer write
-		error.ret_val = 0;
-		tally_errors (error.ret_val);		// data size error
+		tally_errors (0);		// data size error
 		}
 	else
 		{
