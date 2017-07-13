@@ -13,8 +13,8 @@
 	base is clipped to min or max if necessary
 
 -----------------------------------------------------------------------------*/
-
-Systronix_TMP275::Systronix_TMP275(uint8_t base)
+/*
+Systronix_TMP275::Systronix_TMP275 (uint8_t base)
 	{
 	if (base < TMP275_SLAVE_ADDR_0) 
 		{
@@ -33,145 +33,243 @@ Systronix_TMP275::Systronix_TMP275(uint8_t base)
 		}
 
 	}
+*/
 
-// default constructor
-Systronix_TMP275::Systronix_TMP275()
+//---------------------------< D E F A U L T   C O N S R U C T O R >------------------------------------------
+//
+// default constructor assumes lowest base address
+//
+
+Systronix_TMP275::Systronix_TMP275 (void)
 	{
 	_base = TMP275_SLAVE_ADDR_0;
-	_base_clipped = false;	// since it's constant it must be OK
+	_base_clipped = false;						// since it's constant it must be OK
+	error.total_error_count = 0;				// clear the error counter
 	}
 
+
+//---------------------------< D E S T R U C T O R >----------------------------------------------------------
+//
 // destructor
-Systronix_TMP275::~Systronix_TMP275()
+//
+
+Systronix_TMP275::~Systronix_TMP275 (void)
 {
 	// Anything to do here? Leave I2C as master? Set flag?
 }
 
+
 /**
 	Variables publicly read-only, privately read/write
 */
+
+//---------------------------< E X I S T S >------------------------------------------------------------------
+//
 // sensor is instantiated and responds to I2C at base address
-boolean Systronix_TMP275::exists()
+//
+
+boolean Systronix_TMP275::exists (void)
 {
-	return _exists;
+	return error.exists;
 }
 
-// base address passed in constructor was out of range so clipped to value min <= base <= max
-boolean Systronix_TMP275::base_clipped()
+
+//---------------------------< B A S E _ C L I P P E D >------------------------------------------------------
+//
+// base address passed in constructor or setup() was out of range so clipped to value min <= base <= max
+//
+
+boolean Systronix_TMP275::base_clipped (void)
 {
 	return _base_clipped;
 }
 
-uint8_t Systronix_TMP275::base_address()
+
+//---------------------------< B A S E _ G E T >--------------------------------------------------------------
+//
+// return the base address; will be the same as the address in constructor or setup() unless clipped in which
+// case base address shall be TMP275_SLAVE_ADDR_0 or TMP275_SLAVE_ADDR_7
+//
+
+uint8_t Systronix_TMP275::base_get (void)
 {
 	return _base;
 }
 
 
+//---------------------------< S E T U P >--------------------------------------------------------------------
+//
+// TODO: merge with begin()? This function doesn't actually do anything, it just sets some private values. It's
+// redundant and some params must be effectively specified again in begin (Wire net and pins are not independent).	what parameters are specified again? [wsk]
+//
+
+uint8_t Systronix_TMP275::setup (uint8_t base, i2c_t3 wire, char* name)
+	{
+	if ((TMP275_BASE_MIN > base) || (TMP275_BASE_MAX < base))
+		{
+		tally_transaction (SILLY_PROGRAMMER);
+		return FAIL;
+		}
+
+	_base = base;
+	_wire = wire;
+	_wire_name = wire_name = name;		// protected and public
+	return SUCCESS;
+	}
+
+
 //---------------------------< B E G I N >--------------------------------------------------------------------
+//
+//
+//
+
+void Systronix_TMP275::begin (i2c_pins pins, i2c_rate rate)
+	{
+	_wire.begin (I2C_MASTER, 0x00, pins, I2C_PULLUP_EXT, rate);	// join I2C as master
+	Serial.printf ("275 Lib begin %s\r\n", _wire_name);
+	_wire.setDefaultTimeout (200000); 							// 200ms
+	}
+
+
+//---------------------------< D E F A U L T   B E G I N >----------------------------------------------------
 // One-time startup things here. Call this only at program start.
 /*!
 	@brief  Join the I2C bus as a master
 */
 
-void Systronix_TMP275::begin(void)
+void Systronix_TMP275::begin (void)
 	{
-	Wire.begin();	// join I2C as master
+	Wire.begin ();	// join I2C as master
 	//	struct data _data;			// instance of the data struct - not used
 	//	_data.address = _base;		// struct - not used
 	}
 
 
+
 //---------------------------< I N I T >----------------------------------------------------------------------
 //
 // Attempts to write the pointer register and the config register.  
-// If successful, sets _exists true, else false.
+// If successful, sets error.exists true, else false.
 // This is the same as writeConfig TODO just call that from here
 
 uint8_t Systronix_TMP275::init (uint8_t config)
 	{
-	_exists = true;							// anticipate success
+	uint8_t ret_val;
 
-	Wire.beginTransmission (_base);						// base address
-	// no return to check
+	error.exists = true;					// so we can use config_write(); we'll find out later if device does not exist
 
-	error.ret_val = Wire.write (TMP275_CONF_REG_PTR);			// pointer in 2 lsb
-	// return: #bytes written = success, 0=fail
-	error.ret_val += Wire.write (config);						// write configuration
-	// return: #bytes written = success, 0=fail
-
-	if (2 != error.ret_val)
+//	Serial.printf ("257 Lib init %s at base 0x%.2X\r\n", _wire_name, _base);
+	ret_val = config_write (config);		// if successful this means we got two ACKs from slave device
+	if (SUCCESS != ret_val)
 		{
-		// error in buffer write
-		tally_errors (0);		// data size error
+		Serial.printf ("275 Lib init %s at base 0x%.2X failed with 0x%.2X\r\n", _wire_name, _base, error.error_val);
+		error.exists = false;				// only place error.exists is set false
+		return ABSENT;
 		}
-	else
-		{
-		// no error in buffer write so proceed
-		error.ret_val = Wire.endTransmission();
-		// return: 0=success, 1=data too long, 2=recv addr NACK, 3=recv data NACK, 4=other error	
-	  	if (error.ret_val )
-			{					
-			// unsuccessful i2c transaction 
-			error.ret_val = Wire.status();			// detailed error value enum 0..9
-			// return = I2C_WAITING, I2C_SENDING, I2C_RECEIVING, I2C_TIMEOUT, I2C_ADDR_NAK, I2C_DATA_NAK, I2C_ARB_LOST, I2C_BUF_OVF, I2C_SLAVE_TX, I2C_SLAVE_RX;
-			tally_errors (error.ret_val);							// increment the appropriate counter
-			if ((I2C_ADDR_NAK==error.ret_val) || (I2C_DATA_NAK==error.ret_val))
-				{
-				_exists = false;		// addr or data NACK so device is not responding, assume it's not present
-				}
-			}
-		else
-			{
-				// completely successful
-				return SUCCESS;
-			}
-		}
-										
-	return !SUCCESS;
+
+	return SUCCESS;
 	}
 
 
-//---------------------------< T A L L Y _ E R R O R S >------------------------------------------------------
-//
-// Here we tally errors.  This does not answer the 'what to do in the event of these errors' question; it just
-// counts them.  If the device does not ack the address portion of a transaction or if we get a timeout error,
-// exists is set to false.  We assume here that the timeout error is really an indication that the automatic
-// reset feature of the i2c_t3 library failed to reset the device in which case, the device no longer 'exists'
-// for whatever reason.
-//
-
-void Systronix_TMP275::tally_errors (uint8_t err)
+//---------------------------< R E S E T _ B U S >------------------------------------------------------------
+/**
+	Invoke resetBus of whichever Wire net this class instance is using
+	@return nothing
+*/
+void Systronix_TMP275::reset_bus (void)
 	{
-	if (error.total_error_count < 0xFFFFFFFF) error.total_error_count++; 
+	_wire.resetBus();
+	}
 
-	switch (err)
+
+//---------------------------< R E S E T _ B U S _ C O U N T _ R E A D >--------------------------------------
+/**
+	Return the resetBusCount of whichever Wire net this class instance is using
+	@return number of Wire net resets, clips at UINT32_MAX
+*/
+uint32_t Systronix_TMP275::reset_bus_count_read (void)
+	{
+	return _wire.resetBusCountRead();
+	}
+
+
+//---------------------------< T A L L Y _ T R A N S A C T I O N >--------------------------------------------
+/**
+Here we tally errors.  This does not answer the what-to-do-in-the-event-of-these-errors question; it just
+counts them.
+
+TODO: we should decide if the correct thing to do when slave does not ack, or arbitration is lost, or
+timeout occurs, or auto reset fails (states 2, 5 and 4, 7 ??? state numbers may have changed since this
+comment originally added) is to declare these addresses as non-existent.
+
+We need to decide what to do when those conditions occur if we do not declare the device non-existent.
+When a device is declared non-existent, what do we do then? (this last is more a question for the
+application than this library).  The questions in this TODO apply equally to other i2c libraries that tally
+these errors.
+
+Don't set error.exists = false here! These errors are likely recoverable. bab & wsk 170612
+
+This is the only place we set error.error_val()
+
+TODO use i2c_t3 error or status enumeration here in the switch/case
+*/
+
+void Systronix_TMP275::tally_transaction (uint8_t value)
+	{
+	if (value && (error.total_error_count < UINT64_MAX))
+		error.total_error_count++; 			// every time here incr total error count
+
+	error.error_val = value;
+
+	switch (value)
 		{
-		case 0:					// Wire.write failed to write all of the data to tx_buffer
-			error.incomplete_write_count ++;
+		case SUCCESS:
+			if (error.successful_count < UINT64_MAX)
+				error.successful_count++;
 			break;
-		case 1:					// data too long from endTransmission() (rx/tx buffers are 259 bytes - slave addr + 2 cmd bytes + 256 data)
-		case 8:					// buffer overflow from call to status() (read - transaction never started)
-			error.data_len_error_count ++;
+		case 1:								// i2c_t3 and Wire: data too long from endTransmission() (rx/tx buffers are 259 bytes - slave addr + 2 cmd bytes + 256 data)
+			error.data_len_error_count++;
 			break;
-		case 2:					// slave did not ack address (write)
-		case 5:					// from call to status() (read)
-			error.rcv_addr_nack_count ++;
-			_exists = false;
+#if defined I2C_T3_H
+		case I2C_TIMEOUT:
+			error.timeout_count++;			// 4 from i2c_t3; timeout from call to status() (read)
+#else
+		case 4:
+			error.other_error_count++;		// i2c_t3 and Wire: from endTransmission() "other error"
+#endif
 			break;
-		case 3:					// slave did not ack data (write)
-		case 6:					// from call to status() (read)
-			error.rcv_data_nack_count ++;
+		case 2:								// i2c_t3 and Wire: from endTransmission()
+		case I2C_ADDR_NAK:					// 5 from i2c_t3
+			error.rcv_addr_nack_count++;
 			break;
-		case 4:					// arbitration lost (write) or timeout (read/write) or auto-reset failed
-		case 7:					// arbitration lost from call to status() (read)
-			error.other_error_count ++;
-			_exists=false;
+		case 3:								// i2c_t3 and Wire: from endTransmission()
+		case I2C_DATA_NAK:					// 6 from i2c_t3
+			error.rcv_data_nack_count++;
+			break;
+		case I2C_ARB_LOST:					// 7 from i2c_t3; arbitration lost from call to status() (read)
+			error.arbitration_lost_count++;
+			break;
+		case I2C_BUF_OVF:
+			error.buffer_overflow_count++;
+			break;
+		case I2C_SLAVE_TX:
+		case I2C_SLAVE_RX:
+			error.other_error_count++;		// 9 & 10 from i2c_t3; these are not errors, I think
+			break;
+		case WR_INCOMPLETE:					// 11; Wire.write failed to write all of the data to tx_buffer
+			error.incomplete_write_count++;
+			break;
+		case SILLY_PROGRAMMER:				// 12
+			error.silly_programmer_error++;
+			break;
+		default:
+			error.unknown_error_count++;
+			break;
 		}
 	}
 
 
-//---------------------------< R A W 1 2 T O C >--------------------------------------------------------------
+//---------------------------< R A W _ 1 2 _ T O _ C >--------------------------------------------------------
 /*!
 	@brief  Convert raw 12-bit temperature to float deg C
 			handles neg and positive values 
@@ -179,7 +277,7 @@ void Systronix_TMP275::tally_errors (uint8_t err)
 	@TODO instead pass a pointer to the float variable? and return error if value out of bounds
 */
 //
-// receives uint16_t raw13 argument that should be an int16_t.  But, because readRegister() is a general
+// receives uint16_t raw12 argument that should be an int16_t.  But, because readRegister() is a general
 // purpose function for reading all of the 16 bit registers we get around that by casting the uint16_t to
 // int16_t before we use the value.
 //
@@ -190,8 +288,7 @@ void Systronix_TMP275::tally_errors (uint8_t err)
 
 float Systronix_TMP275::raw12_to_c (uint16_t raw12)
 	{
-	uint8_t		shift = 4;		// 
-	return 0.0625 * ((int16_t)raw12 >> shift);
+	return 0.0625 * ((int16_t)raw12 >> 4);
 	}
 
 
@@ -215,23 +312,23 @@ uint8_t Systronix_TMP275::get_temperature_data (void)
 	{
 	
 	if (_pointer_reg)									// if not pointed at temperature register
-		if (pointerWrite (TMP275_TEMP_REG_PTR))			// attempt to point it
+		if (pointer_write (TMP275_TEMP_REG_PTR))			// attempt to point it
 			return FAIL;								// attempt failed; quit
 	
-	if (register16Read (&data.raw_temp))				// attempt to read the temperature
+	if (register16_read (&data.raw_temp))					// attempt to read the temperature
 		return FAIL;									// attempt failed; quit
 	
 	data.t_high = max((int16_t)data.raw_temp, (int16_t)data.t_high);	// keep track of min/max temperatures
 	data.t_low = min((int16_t)data.t_low, (int16_t)data.raw_temp);
 
-	data.deg_c = raw12_to_c (data.raw_temp);					// convert to human-readable forms
+	data.deg_c = raw12_to_c (data.raw_temp);			// convert to human-readable forms
 	data.deg_f = raw12_to_f (data.raw_temp);
 	
 	return SUCCESS;
 	}
 
 
-//---------------------------< P O I N T E R W R I T E >------------------------------------------------------
+//---------------------------< P O I N T E R _ W R I T E >----------------------------------------------------
 /**
 Write to a TMP275 register
 Start with slave address, as in any I2C transaction.
@@ -244,144 +341,172 @@ The last value written to the Pointer Register persists until changed.
 
 **/
 
-uint8_t Systronix_TMP275::pointerWrite (uint8_t pointer)
+uint8_t Systronix_TMP275::pointer_write (uint8_t pointer)
 	{
-	if (!_exists)								// exit immediately if device does not exist
+	uint8_t ret_val;
+
+	if (!error.exists)								// exit immediately if device does not exist
 		return ABSENT;
 
-	_pointer_reg = pointer;								// keep a copy for use by other functions
-	Wire.beginTransmission (_base);						// base address
-	error.ret_val = Wire.write (_pointer_reg);		// pointer in 2 lsb
-	if (1 != error.ret_val)
+	_wire.beginTransmission (_base);				// base address
+	ret_val = _wire.write (pointer);				// pointer in 2 lsb
+	if (1 != ret_val)
 		{
-		error.ret_val = 0;
-		tally_errors (error.ret_val);					// increment the appropriate counter
+		tally_transaction (WR_INCOMPLETE);			// increment the appropriate counter
 		return FAIL;
 		}
 
-	error.ret_val = Wire.endTransmission();
-  	if (SUCCESS == error.ret_val)
-		return SUCCESS;
-	tally_errors (error.ret_val);						// increment the appropriate counter
-	return FAIL;										// calling function decides what to do with the error
-	}
-
-//---------------------------< C O N F I G W R I T E >----------------------------------------------------
-/**
-Write to the 8-bit config register
-returns 0 if no error, positive values for NAK errors
-**/
-
-uint8_t Systronix_TMP275::configWrite (uint8_t data)
-	{
-	uint8_t written;									// number of bytes written
-
-	if (!_exists)								// exit immediately if device does not exist
-		return ABSENT;
-
-	Wire.beginTransmission (_base);						// base address
-	written = Wire.write (TMP275_CONF_REG_PTR);			// pointer in 2 lsb
-	_pointer_reg = TMP275_CONF_REG_PTR;
-	written += Wire.write (data);						// write data
-
-	if (3 != written)
+	ret_val = _wire.endTransmission();
+	if (SUCCESS != ret_val)
 		{
-		error.ret_val = 0;
-		tally_errors (error.ret_val);					// increment the appropriate counter
-		return FAIL;
-		}
-	
-  	if (SUCCESS == Wire.endTransmission())
-		return SUCCESS;
-	tally_errors (error.ret_val);						// increment the appropriate counter
-	return FAIL;										// calling function decides what to do with the error
-	}
-
-//---------------------------< C O N F I G R E A D >------------------------------------------------------
-/**
-  Read the 8-bit config register 
-
-  return 0 if no error, positive bytes read otherwise.
-*/
-
-uint8_t Systronix_TMP275::configRead (uint8_t *data)
-	{
-	if (!_exists)								// exit immediately if device does not exist
-		return ABSENT;
-
-	if (_pointer_reg != TMP275_CONF_REG_PTR)			// if not pointing to config reg then do so
-	{
-		if (SUCCESS != pointerWrite(TMP275_CONF_REG_PTR))
-			return FAIL;
-	}
-
-	if (1 != Wire.requestFrom(_base, 1, I2C_STOP))
-		{
-		error.ret_val = Wire.status();				// to get error value
-		tally_errors (error.ret_val);					// increment the appropriate counter
-		return FAIL;
+		tally_transaction (ret_val);				// increment the appropriate counter
+		return FAIL;								// calling function decides what to do with the error
 		}
 
-	*data = (uint8_t)Wire.read();
+	_pointer_reg = pointer;							// update shadow copy to remember this setting
+
+	tally_transaction (SUCCESS);
 	return SUCCESS;
 	}
 
-//---------------------------< R E G I S T E R 1 6 W R I T E >----------------------------------------------------
+
+//---------------------------< C O N F I G _ W R I T E >------------------------------------------------------
 /**
-Param pointer is the TMP275 register into which to write the data
-data is the 16 bits to write.
-returns 0 if no error, positive values for NAK errors
+Write to the 8-bit config register
+returns SUCCESS if no error, ABSENT or FAIL else
 **/
 
-uint8_t Systronix_TMP275::register16Write (uint8_t pointer, uint16_t data)
+uint8_t Systronix_TMP275::config_write (uint8_t config)
 	{
-	uint8_t written;									// number of bytes written
+	uint8_t ret_val;
 
-	if (!_exists)								// exit immediately if device does not exist
+	if (!error.exists)									// exit immediately if device does not exist
 		return ABSENT;
 
-	Wire.beginTransmission (_base);						// base address
-	written = Wire.write (pointer);						// pointer in 2 lsb
-	written += Wire.write ((uint8_t)(data >> 8));		// write MSB of data
-	written += Wire.write ((uint8_t)(data & 0x00FF));	// write LSB of data
+	_wire.beginTransmission (_base);				// base address
+	ret_val = _wire.write (TMP275_CONF_REG_PTR);	// pointer in 2 lsb
+	ret_val += _wire.write (config);				// write configuration register data
 
-	if (3 != written)
+	if (2 != ret_val)
 		{
-		error.ret_val = 0;
-		tally_errors (error.ret_val);					// increment the appropriate counter
+		tally_transaction (WR_INCOMPLETE);			// increment the appropriate counter
 		return FAIL;
 		}
+
+	ret_val = _wire.endTransmission();
+	if (SUCCESS != ret_val)
+		{
+		tally_transaction (ret_val);				// increment the appropriate counter
+		return FAIL;								// calling function decides what to do with the error
+		}
 	
-  	if (SUCCESS == Wire.endTransmission())
-		return SUCCESS;
-	tally_errors (error.ret_val);						// increment the appropriate counter
-	return FAIL;										// calling function decides what to do with the error
+	_pointer_reg = TMP275_CONF_REG_PTR;				// update shadow copies to remember these settings
+	_config_reg = config;
+
+	tally_transaction (SUCCESS);
+	return SUCCESS;
 	}
 
 
-//---------------------------< R E G I S T E R 1 6 R E A D >------------------------------------------------------
+//---------------------------< C O N F I G _ R E A D >--------------------------------------------------------
+/**
+Read the 8-bit config register
+returns SUCCESS if no error, ABSENT or FAIL else
+*/
+
+uint8_t Systronix_TMP275::config_read (uint8_t *data_ptr)
+	{
+	uint8_t		ret_val;
+
+	if (!error.exists)									// exit immediately if device does not exist
+		return ABSENT;
+
+	if (_pointer_reg != TMP275_CONF_REG_PTR)		// if not pointing to config reg then do so
+		{
+		if (SUCCESS != pointer_write (TMP275_CONF_REG_PTR))
+			return FAIL;
+		}
+
+	if (1 != _wire.requestFrom (_base, 1, I2C_STOP))
+		{
+		ret_val = _wire.status();					// to get error value
+		tally_transaction (ret_val);				// increment the appropriate counter
+		return FAIL;
+		}
+
+	*data_ptr = _wire.readByte();
+
+	tally_transaction (SUCCESS);
+	return SUCCESS;
+	}
+
+
+//---------------------------< R E G I S T E R 1 6 _ W R I T E >----------------------------------------------
+/**
+Param pointer is the TMP275 register into which to write the 16-bit data
+returns SUCCESS if no error, ABSENT or FAIL else
+**/
+
+uint8_t Systronix_TMP275::register16_write (uint8_t pointer, uint16_t data)
+	{
+	uint8_t ret_val;
+
+	if (!error.exists)									// exit immediately if device does not exist
+		return ABSENT;
+
+	_wire.beginTransmission (_base);					// base address
+	ret_val = _wire.write (pointer);					// pointer in 2 lsb
+	ret_val += _wire.write ((uint8_t)(data >> 8));		// write MSB of data
+	ret_val += _wire.write ((uint8_t)(data & 0x00FF));	// write LSB of data
+
+	if (3 != ret_val)
+		{
+		error.error_val = 0;
+		tally_transaction (WR_INCOMPLETE);			// increment the appropriate counter
+		return FAIL;
+		}
+	
+	ret_val = _wire.endTransmission();
+	if (SUCCESS != ret_val)
+		{
+		tally_transaction (ret_val);				// increment the appropriate counter
+		return FAIL;								// calling function decides what to do with the error
+		}
+
+	_pointer_reg = pointer;							// update shadow copies to remember these settings
+
+	tally_transaction (SUCCESS);					// increment the appropriate counter
+	return SUCCESS;
+	}
+
+
+//---------------------------< R E G I S T E R 1 6 _ R E A D >------------------------------------------------
 /**
   Read the 16-bit register addressed by the current pointer value, store the data at the location passed
 
   TODO: What if current pointer value is the 8-bit config register???
   
-  return 0 if no error, positive bytes read otherwise.
+returns SUCCESS if no error, ABSENT or FAIL else
 */
 
-uint8_t Systronix_TMP275::register16Read (uint16_t *data)
+uint8_t Systronix_TMP275::register16_read (uint16_t *data_ptr)
 	{
-	if (!_exists)								// exit immediately if device does not exist
+	uint8_t		ret_val;
+
+	if (!error.exists)									// exit immediately if device does not exist
 		return ABSENT;
 
-	if (2 != Wire.requestFrom(_base, 2, I2C_STOP))
+	if (2 != _wire.requestFrom (_base, 2, I2C_STOP))
 		{
-		error.ret_val = Wire.status();				// to get error value
-		tally_errors (error.ret_val);					// increment the appropriate counter
+		ret_val = _wire.status();					// to get error value
+		tally_transaction (ret_val);				// increment the appropriate counter
 		return FAIL;
 		}
 
-	*data = (uint16_t)Wire.read() << 8;
-	*data |= (uint16_t)Wire.read();
+	*data_ptr = (uint16_t)_wire.readByte() << 8;	// save the data
+	*data_ptr |= (uint16_t)_wire.readByte();
+
+	tally_transaction (SUCCESS);					// increment the appropriate counter
 	return SUCCESS;
 	}
 
