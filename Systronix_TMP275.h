@@ -207,7 +207,7 @@ class Systronix_TMP275
 		
 		Maybe different structs for data values and part control
 		**/
-		struct
+		struct data_t
 			{
 			uint16_t	raw_temp;				// most recent
 			uint16_t	t_high = 0x0C90<<4;		// historical (since reset) high temp (preset here to device max low (-55 C) raw12 format)

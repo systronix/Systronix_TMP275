@@ -91,13 +91,13 @@ void setup(void)
    
   
   // start PCA9548A library
-  PCA9548A_70.setup (PCA9548A_SLAVE_ADDR_0, Wire1, (char*)"Wire");
+  PCA9548A_70.setup (PCA9548A_SLAVE_ADDR_0, Wire1, (char*)"Wire1");
   PCA9548A_70.begin();
 
-  config_value = PCA9548A_CHAN_0_ENABLE;
+  config_value = PCA9548A_PORT_0_ENABLE;
   
   // start TMP275 library
-  tmp275_mux0_48.setup (TMP275_SLAVE_ADDR_0, Wire1, (char*)"Wire");
+  tmp275_mux0_48.setup (TMP275_SLAVE_ADDR_0, Wire1, (char*)"Wire1");
   tmp275_mux0_48.begin();
   
 
@@ -186,7 +186,7 @@ void loop(void)
   if (verbose) Serial.printf("@%.4u  ", millis());
 
   // Enable Mux Channel 0
-  stat = PCA9548A_70.control_write (PCA9548A_CHAN_0_ENABLE);
+  stat = PCA9548A_70.control_write (PCA9548A_PORT_0_ENABLE);
   if (SUCCESS != stat)
   {
     text_ptr = (PCA9548A_70.status_text[PCA9548A_70.error.error_val]);

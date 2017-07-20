@@ -126,7 +126,7 @@ uint8_t Systronix_TMP275::setup (uint8_t base, i2c_t3 wire, char* name)
 void Systronix_TMP275::begin (i2c_pins pins, i2c_rate rate)
 	{
 	_wire.begin (I2C_MASTER, 0x00, pins, I2C_PULLUP_EXT, rate);	// join I2C as master
-	Serial.printf ("275 Lib begin %s\r\n", _wire_name);
+//	Serial.printf ("275 lib begin %s\r\n", _wire_name);
 	_wire.setDefaultTimeout (200000); 							// 200ms
 	}
 
@@ -158,11 +158,11 @@ uint8_t Systronix_TMP275::init (uint8_t config)
 
 	error.exists = true;					// so we can use config_write(); we'll find out later if device does not exist
 
-//	Serial.printf ("257 Lib init %s at base 0x%.2X\r\n", _wire_name, _base);
+//	Serial.printf ("257 lib init %s at base 0x%.2X\r\n", _wire_name, _base);
 	ret_val = config_write (config);		// if successful this means we got two ACKs from slave device
 	if (SUCCESS != ret_val)
 		{
-		Serial.printf ("275 Lib init %s at base 0x%.2X failed with 0x%.2X\r\n", _wire_name, _base, error.error_val);
+		Serial.printf ("275 lib init %s at base 0x%.2X failed with %s (0x%.2X)\r\n", _wire_name, _base, status_text[error.error_val], error.error_val);
 		error.exists = false;				// only place error.exists is set false
 		return ABSENT;
 		}
@@ -310,20 +310,20 @@ float Systronix_TMP275::raw12_to_f (uint16_t raw12)
 
 uint8_t Systronix_TMP275::get_temperature_data (void)
 	{
-	
 	if (_pointer_reg)									// if not pointed at temperature register
-		if (pointer_write (TMP275_TEMP_REG_PTR))			// attempt to point it
+		if (pointer_write (TMP275_TEMP_REG_PTR))		// attempt to point it
 			return FAIL;								// attempt failed; quit
-	
-	if (register16_read (&data.raw_temp))					// attempt to read the temperature
+
+	if (register16_read (&data.raw_temp))				// attempt to read the temperature
 		return FAIL;									// attempt failed; quit
-	
+
 	data.t_high = max((int16_t)data.raw_temp, (int16_t)data.t_high);	// keep track of min/max temperatures
 	data.t_low = min((int16_t)data.t_low, (int16_t)data.raw_temp);
 
 	data.deg_c = raw12_to_c (data.raw_temp);			// convert to human-readable forms
 	data.deg_f = raw12_to_f (data.raw_temp);
-	
+
+	data.fresh = true;									// identify the current data set as new and fresh
 	return SUCCESS;
 	}
 
