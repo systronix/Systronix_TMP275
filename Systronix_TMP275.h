@@ -306,7 +306,9 @@ class Systronix_TMP275
 		float		raw12_to_c (uint16_t raw12);						// temperature conversion functions
 		float		raw12_to_f (uint16_t raw12);
 		uint8_t		get_temperature_data (void);
-
+		uint8_t		get_data ()											// an alias that may be useful
+						{return get_temperature_data ();};
+		
 		uint8_t		pointer_write (uint8_t pointer);					// i2c bus dependent functions
 		uint8_t		register16_write (uint8_t pointer, uint16_t data);	// write to 16-bit registers
 		uint8_t		config_write (uint8_t data);						// write to 8-bit config register)
