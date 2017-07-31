@@ -150,7 +150,7 @@ void Systronix_TMP275::begin (void)
 //
 // Attempts to write the pointer register and the config register.  
 // If successful, sets error.exists true, else false.
-// This is the same as writeConfig TODO just call that from here
+// This is the same as writeConfig
 
 uint8_t Systronix_TMP275::init (uint8_t config)
 	{
