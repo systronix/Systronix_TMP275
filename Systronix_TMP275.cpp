@@ -162,7 +162,7 @@ uint8_t Systronix_TMP275::init (uint8_t config)
 	ret_val = config_write (config);		// if successful this means we got two ACKs from slave device
 	if (SUCCESS != ret_val)
 		{
-		Serial.printf ("275 lib init %s at base 0x%.2X failed with %s (0x%.2X)\r\n", _wire_name, _base, status_text[error.error_val], error.error_val);
+//		Serial.printf ("275 lib init %s at base 0x%.2X failed with %s (0x%.2X)\r\n", _wire_name, _base, status_text[error.error_val], error.error_val);
 		error.exists = false;				// only place error.exists is set false
 		return ABSENT;
 		}
