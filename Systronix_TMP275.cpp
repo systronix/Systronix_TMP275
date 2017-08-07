@@ -59,10 +59,6 @@ Systronix_TMP275::~Systronix_TMP275 (void)
 }
 
 
-/**
-	Variables publicly read-only, privately read/write
-*/
-
 //---------------------------< E X I S T S >------------------------------------------------------------------
 //
 // sensor is instantiated and responds to I2C at base address
