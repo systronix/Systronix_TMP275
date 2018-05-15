@@ -5,7 +5,7 @@
  *	  Author: BAB
  */
 
-#include <Systronix_TMP275.h>	
+#include <Systronix_TMP275.h>
 
 /**---------------------------< CONSTRUCTOR >----------------------------------
 
@@ -103,7 +103,7 @@ uint8_t Systronix_TMP275::setup (uint8_t base, i2c_t3 wire, char* name)
 	{
 	if ((TMP275_BASE_MIN > base) || (TMP275_BASE_MAX < base))
 		{
-		tally_transaction (SILLY_PROGRAMMER);
+		i2c_common.tally_transaction (SILLY_PROGRAMMER, &error);
 		return FAIL;
 		}
 
@@ -186,82 +186,6 @@ void Systronix_TMP275::reset_bus (void)
 uint32_t Systronix_TMP275::reset_bus_count_read (void)
 	{
 	return _wire.resetBusCountRead();
-	}
-
-
-//---------------------------< T A L L Y _ T R A N S A C T I O N >--------------------------------------------
-/**
-Here we tally errors.  This does not answer the what-to-do-in-the-event-of-these-errors question; it just
-counts them.
-
-TODO: we should decide if the correct thing to do when slave does not ack, or arbitration is lost, or
-timeout occurs, or auto reset fails (states 2, 5 and 4, 7 ??? state numbers may have changed since this
-comment originally added) is to declare these addresses as non-existent.
-
-We need to decide what to do when those conditions occur if we do not declare the device non-existent.
-When a device is declared non-existent, what do we do then? (this last is more a question for the
-application than this library).  The questions in this TODO apply equally to other i2c libraries that tally
-these errors.
-
-Don't set error.exists = false here! These errors are likely recoverable. bab & wsk 170612
-
-This is the only place we set error.error_val()
-
-TODO use i2c_t3 error or status enumeration here in the switch/case
-*/
-
-void Systronix_TMP275::tally_transaction (uint8_t value)
-	{
-	if (value && (error.total_error_count < UINT64_MAX))
-		error.total_error_count++; 			// every time here incr total error count
-
-	error.error_val = value;
-
-	switch (value)
-		{
-		case SUCCESS:
-			if (error.successful_count < UINT64_MAX)
-				error.successful_count++;
-			break;
-		case 1:								// i2c_t3 and Wire: data too long from endTransmission() (rx/tx buffers are 259 bytes - slave addr + 2 cmd bytes + 256 data)
-			error.data_len_error_count++;
-			break;
-#if defined I2C_T3_H
-		case I2C_TIMEOUT:
-			error.timeout_count++;			// 4 from i2c_t3; timeout from call to status() (read)
-#else
-		case 4:
-			error.other_error_count++;		// i2c_t3 and Wire: from endTransmission() "other error"
-#endif
-			break;
-		case 2:								// i2c_t3 and Wire: from endTransmission()
-		case I2C_ADDR_NAK:					// 5 from i2c_t3
-			error.rcv_addr_nack_count++;
-			break;
-		case 3:								// i2c_t3 and Wire: from endTransmission()
-		case I2C_DATA_NAK:					// 6 from i2c_t3
-			error.rcv_data_nack_count++;
-			break;
-		case I2C_ARB_LOST:					// 7 from i2c_t3; arbitration lost from call to status() (read)
-			error.arbitration_lost_count++;
-			break;
-		case I2C_BUF_OVF:
-			error.buffer_overflow_count++;
-			break;
-		case I2C_SLAVE_TX:
-		case I2C_SLAVE_RX:
-			error.other_error_count++;		// 9 & 10 from i2c_t3; these are not errors, I think
-			break;
-		case WR_INCOMPLETE:					// 11; Wire.write failed to write all of the data to tx_buffer
-			error.incomplete_write_count++;
-			break;
-		case SILLY_PROGRAMMER:				// 12
-			error.silly_programmer_error++;
-			break;
-		default:
-			error.unknown_error_count++;
-			break;
-		}
 	}
 
 
@@ -348,20 +272,20 @@ uint8_t Systronix_TMP275::pointer_write (uint8_t pointer)
 	ret_val = _wire.write (pointer);				// pointer in 2 lsb
 	if (1 != ret_val)
 		{
-		tally_transaction (WR_INCOMPLETE);			// increment the appropriate counter
+		i2c_common.tally_transaction (WR_INCOMPLETE, &error);			// increment the appropriate counter
 		return FAIL;
 		}
 
 	ret_val = _wire.endTransmission();
 	if (SUCCESS != ret_val)
 		{
-		tally_transaction (ret_val);				// increment the appropriate counter
+		i2c_common.tally_transaction (ret_val, &error);				// increment the appropriate counter
 		return FAIL;								// calling function decides what to do with the error
 		}
 
 	_pointer_reg = pointer;							// update shadow copy to remember this setting
 
-	tally_transaction (SUCCESS);
+	i2c_common.tally_transaction (SUCCESS, &error);
 	return SUCCESS;
 	}
 
@@ -385,21 +309,21 @@ uint8_t Systronix_TMP275::config_write (uint8_t config)
 
 	if (2 != ret_val)
 		{
-		tally_transaction (WR_INCOMPLETE);			// increment the appropriate counter
+		i2c_common.tally_transaction (WR_INCOMPLETE, &error);			// increment the appropriate counter
 		return FAIL;
 		}
 
 	ret_val = _wire.endTransmission();
 	if (SUCCESS != ret_val)
 		{
-		tally_transaction (ret_val);				// increment the appropriate counter
+		i2c_common.tally_transaction (ret_val, &error);				// increment the appropriate counter
 		return FAIL;								// calling function decides what to do with the error
 		}
-	
+
 	_pointer_reg = TMP275_CONF_REG_PTR;				// update shadow copies to remember these settings
 	_config_reg = config;
 
-	tally_transaction (SUCCESS);
+	i2c_common.tally_transaction (SUCCESS, &error);
 	return SUCCESS;
 	}
 
@@ -426,13 +350,13 @@ uint8_t Systronix_TMP275::config_read (uint8_t *data_ptr)
 	if (1 != _wire.requestFrom (_base, 1, I2C_STOP))
 		{
 		ret_val = _wire.status();					// to get error value
-		tally_transaction (ret_val);				// increment the appropriate counter
+		i2c_common.tally_transaction (ret_val, &error);				// increment the appropriate counter
 		return FAIL;
 		}
 
 	*data_ptr = _wire.readByte();
 
-	tally_transaction (SUCCESS);
+	i2c_common.tally_transaction (SUCCESS, &error);
 	return SUCCESS;
 	}
 
@@ -458,20 +382,20 @@ uint8_t Systronix_TMP275::register16_write (uint8_t pointer, uint16_t data)
 	if (3 != ret_val)
 		{
 		error.error_val = 0;
-		tally_transaction (WR_INCOMPLETE);			// increment the appropriate counter
+		i2c_common.tally_transaction (WR_INCOMPLETE, &error);			// increment the appropriate counter
 		return FAIL;
 		}
-	
+
 	ret_val = _wire.endTransmission();
 	if (SUCCESS != ret_val)
 		{
-		tally_transaction (ret_val);				// increment the appropriate counter
+		i2c_common.tally_transaction (ret_val, &error);				// increment the appropriate counter
 		return FAIL;								// calling function decides what to do with the error
 		}
 
 	_pointer_reg = pointer;							// update shadow copies to remember these settings
 
-	tally_transaction (SUCCESS);					// increment the appropriate counter
+	i2c_common.tally_transaction (SUCCESS, &error);					// increment the appropriate counter
 	return SUCCESS;
 	}
 
@@ -495,14 +419,14 @@ uint8_t Systronix_TMP275::register16_read (uint16_t *data_ptr)
 	if (2 != _wire.requestFrom (_base, 2, I2C_STOP))
 		{
 		ret_val = _wire.status();					// to get error value
-		tally_transaction (ret_val);				// increment the appropriate counter
+		i2c_common.tally_transaction (ret_val, &error);				// increment the appropriate counter
 		return FAIL;
 		}
 
 	*data_ptr = (uint16_t)_wire.readByte() << 8;	// save the data
 	*data_ptr |= (uint16_t)_wire.readByte();
 
-	tally_transaction (SUCCESS);					// increment the appropriate counter
+	i2c_common.tally_transaction (SUCCESS, &error);					// increment the appropriate counter
 	return SUCCESS;
 	}
 
